@@ -26,6 +26,8 @@
   --color-neutral-white: oklch(1 0 0); /*#ffffff;*/
   --color-neutral-background: #f6f5f5;
   --color-neutral-form-border: #cccccc;
+  --color-neutral-gray-75: oklch(0.9463 0.0062 75.41);
+
 
   /* Orange Palette */
   --color-orange-25: #fff7ed;
@@ -144,6 +146,7 @@
     --color-clx-bg-white: var(--color-neutral-white);
     --color-clx-bg-neutral-subtle: var(--color-neutral-gray-25);
     --color-clx-bg-neutral-bold: var(--color-neutral-gray-50);
+    --color-clx-bg-neutral-hover: var(--color-neutral-gray-75);
     --color-clx-bg-disabled: var(--color-neutral-gray-400);
     --color-clx-bg-overlay: rgb(39 38 37 / 0.75);
     --color-clx-bg-dark: var(--color-neutral-dark);
@@ -184,7 +187,8 @@
     --color-clx-text-accent: var(--color-blue-500);
     --color-clx-text-success: var(--color-green-700);
     --color-clx-text-warning: var(--color-yellow-700);
-    --color-clx-text-danger: var(--color-red-700);
+    --color-clx-text-danger: var(--color-red-500);
+    --color-clx-text-danger-bold: var(--color-red-700);
     --color-clx-text-lime: var(--color-lime-700);
 
     /* Border Colors */

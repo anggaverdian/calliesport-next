@@ -2,19 +2,38 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import AppBarDetail from "../ui_pattern/AppBar/AppBarDetail";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { PlusIcon } from "@phosphor-icons/react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { PlusIcon, XIcon, PencilSimpleIcon, MinusCircleIcon } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+} from "@/components/ui/field";
+import { createTournamentSchema, type CreateTournamentFormData } from "@/utils/form-schemas";
 
 // SVG imports for team type icons
 import thunderIcon from "../../public/thunder.svg";
 import chartIcon from "../../public/Chart.svg";
 import upIcon from "../../public/Up.svg";
 import starIcon from "../../public/Star.svg";
+import { saveTournament, TeamType } from "@/utils/tournament";
 
 // Team type options
 const teamTypes = [
@@ -34,14 +53,36 @@ const pointOptions = [
 
 export default function CreateTournament() {
   const router = useRouter();
-  const [tournamentName, setTournamentName] = useState("");
-  const [selectedTeamType, setSelectedTeamType] = useState("standard");
-  const [selectedPointType, setSelectedPointType] = useState("21");
-  const [players, setPlayers] = useState<string[]>([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [playerInput, setPlayerInput] = useState("");
 
-  const handleCreate = () => {
-    // TODO: Save to database later
-    toast.success("Tournament created successfully!");
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateTournamentFormData>({
+    resolver: zodResolver(createTournamentSchema),
+    defaultValues: {
+      tournamentName: "",
+      teamType: "standard",
+      pointType: "21",
+      players: [],
+    },
+  });
+
+  const players = watch("players");
+
+  const onSubmit = (data: CreateTournamentFormData) => {
+    // Save to localStorage
+    saveTournament({
+      name: data.tournamentName,
+      teamType: data.teamType as TeamType,
+      pointType: data.pointType,
+      players: data.players,
+    });
+    toast.success(`Tournament "${data.tournamentName}" created with ${data.players.length} players!`);
     router.push("/");
   };
 
@@ -49,131 +90,324 @@ export default function CreateTournament() {
     router.push("/");
   };
 
+  const handleAddPlayers = () => {
+    if (!playerInput.trim()) return;
+
+    // Split by comma or newline, trim whitespace, filter empty strings
+    const newPlayers = playerInput
+      .split(/[,\n]/)
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
+
+    if (newPlayers.length > 0) {
+      setValue("players", [...players, ...newPlayers], { shouldValidate: true });
+      setPlayerInput("");
+      toast.success(`Added ${newPlayers.length} player(s)!`);
+    }
+  };
+
+  const handleDeletePlayer = (index: number) => {
+    const playerName = players[index];
+    const updatedPlayers = players.filter((_, i) => i !== index);
+    setValue("players", updatedPlayers, { shouldValidate: true });
+    toast.success(playerName + " removed");
+  };
+
+  const handleEditPlayer = (index: number) => {
+    const playerName = players[index];
+    const newName = prompt("Edit player name:", playerName);
+    if (newName && newName.trim() !== "") {
+      const updatedPlayers = [...players];
+      updatedPlayers[index] = newName.trim();
+      setValue("players", updatedPlayers, { shouldValidate: true });
+      toast.success("Player name updated");
+    }
+  };
+
   return (
-    <main className="container w-auto flex flex-col min-h-screen">
+    <main className="w-auto min-h-screen">
       <AppBarDetail />
 
       {/* Main content */}
-      <div className="flex-1 p-4 space-y-6 ">
-        {/* Tournament name input */}
-        <div className="grid w-full items-center gap-1">
-          <Label htmlFor="tournament-name" className="text-base font-semibold text-clx-text-default">
-            Tournament name
-          </Label>
-          <Input
-            type="text"
-            id="tournament-name"
-            placeholder=""
-            className="h-11 text-base border-clx-border-textfield"
-            value={tournamentName}
-            onChange={(e) => setTournamentName(e.target.value)}
-          />
-        </div>
-
-        {/* Team type selection */}
-        <div className="space-y-2">
-          <div  className="pb-2">
-            <p className="text-base font-semibold text-clx-text-default">Which team up you want to play?</p>
-            <p className="text-xs text-clx-text-dark-subtle">Determine your team pairing</p>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {teamTypes.map((team) => {
-              const isSelected = selectedTeamType === team.id;
-              return (
-                <button
-                  key={team.id}
-                  onClick={() => setSelectedTeamType(team.id)}
-                  className={`flex flex-col items-center justify-center gap-3 min-w-[116px] h-[148px] px-4 py-6 rounded-lg transition-all ${
-                    isSelected
-                      ? "bg-clx-bg-accent-surface border border-clx-border-accent-bold"
-                      : "bg-clx-bg-neutral-bold"
-                  }`}
-                >
-                  <Image
-                    src={team.icon}
-                    width={48}
-                    height={48}
-                    alt={`${team.name} ${team.subname}`}
+      <div className="container">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <FieldGroup>
+            <div className="flex-1 p-4 space-y-6">
+              {/* Tournament name input */}
+              <Field>
+                <div className="grid w-full items-center gap-1">
+                  <Label htmlFor="tournament-name" className="text-base font-semibold text-clx-text-default">
+                    Tournament name
+                  </Label>
+                  <Controller
+                    name="tournamentName"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        type="text"
+                        id="tournament-name"
+                        placeholder=""
+                        maxLength={64}
+                        className={`h-11 text-base ${errors.tournamentName ? "border-clx-border-danger-bold" : "border-clx-border-textfield"}`}
+                      />
+                    )}
                   />
-                  <div className="text-center">
-                    <p className={`text-sm ${isSelected ? "font-medium" : "font-normal"} text-clx-text-default`}>
-                      {team.name}
-                    </p>
-                    <p className={`text-sm ${isSelected ? "font-medium" : "font-normal"} text-clx-text-default`}>
-                      {team.subname}
-                    </p>
+                  {errors.tournamentName && (
+                    <FieldError className="text-sm text-clx-text-danger">{errors.tournamentName.message}</FieldError>
+                  )}
+                </div>
+              </Field>
+
+              {/* Team type selection */}
+              <Field>
+                <div className="space-y-2">
+                  <div className="pb-2">
+                    <p className="text-base font-semibold text-clx-text-default">Which team up you want to play?</p>
+                    <p className="text-xs text-clx-text-dark-subtle">Determine your team pairing</p>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <Controller
+                    name="teamType"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {teamTypes.map((team) => {
+                          const isSelected = field.value === team.id;
+                          return (
+                            <button
+                              type="button"
+                              key={team.id}
+                              onClick={() => field.onChange(team.id)}
+                              className={`flex flex-col items-center justify-center gap-3 min-w-[116px] h-[148px] px-4 py-6 rounded-lg transition-all ${
+                                isSelected
+                                  ? "bg-clx-bg-accent-subtle border border-clx-border-accent-bold"
+                                  : "bg-clx-bg-neutral-bold hover:bg-clx-bg-neutral-hover"
+                              }`}
+                            >
+                              <Image
+                                src={team.icon}
+                                width={48}
+                                height={48}
+                                alt={`${team.name} ${team.subname}`}
+                              />
+                              <div className="text-center">
+                                <p className={`text-sm ${isSelected ? "font-medium" : "font-normal"} text-clx-text-default`}>
+                                  {team.name}
+                                </p>
+                                <p className={`text-sm ${isSelected ? "font-medium" : "font-normal"} text-clx-text-default`}>
+                                  {team.subname}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  />
+                </div>
+              </Field>
 
-        {/* Point match selection */}
-        <div className="space-y-4">
-          <div>
-            <p className="text-base font-semibold text-clx-text-default">Point match</p>
-            <p className="text-xs text-clx-text-dark-subtle">Which point match do you want to play?</p>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {pointOptions.map((point) => {
-              const isSelected = selectedPointType === point.id;
-              return (
-                <button
-                  key={point.id}
-                  onClick={() => setSelectedPointType(point.id)}
-                  className={`shrink-0 whitespace-nowrap px-4 py-2 h-9 rounded-full text-sm transition-all ${
-                    isSelected
-                      ? "bg-clx-bg-dark text-clx-text-white font-semibold border-0"
-                      : "bg-clx-bg-neutral-bold text-clx-text-default font-normal border-0"
-                  }`}
-                >
-                  {point.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+              {/* Point match selection */}
+              <Field>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-base font-semibold text-clx-text-default">Point match</p>
+                    <p className="text-xs text-clx-text-dark-subtle">Which point match do you want to play?</p>
+                  </div>
+                  <Controller
+                    name="pointType"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex gap-2 overflow-x-auto pb-2">
+                        {pointOptions.map((point) => {
+                          const isSelected = field.value === point.id;
+                          return (
+                            <button
+                              type="button"
+                              key={point.id}
+                              onClick={() => field.onChange(point.id)}
+                              className={`shrink-0 whitespace-nowrap px-4 py-2 h-9 rounded-full text-sm transition-all ${
+                                isSelected
+                                  ? "bg-clx-bg-dark text-clx-text-white font-semibold border-0"
+                                  : "bg-clx-bg-neutral-bold text-clx-text-default font-normal border-0 hover:bg-clx-bg-neutral-hover"
+                              }`}
+                            >
+                              {point.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  />
+                </div>
+              </Field>
 
-        {/* Players section */}
-        <div className="space-y-4 pb-8 pt-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-semibold text-clx-text-default">Players</h2>
-              <p className="text-xs text-clx-text-default">
-                Total <span className="font-medium">{players.length} players</span> added
-              </p>
+              {/* Players section */}
+              <Field>
+                <div className="space-y-4 pb-8 pt-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xl font-bold text-clx-text-default">Players</p>
+                      <p className="text-sm text-clx-text-default">
+                        Total <span className="font-medium">{players.length} players</span> added
+                      </p>
+                    </div>
+                    <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} modal={true}>
+                      <DrawerTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-11 px-4! border-clx-border-textfield rounded-lg gap-2 text-base pl-3.5!"
+                        >
+                          {/* 1. Toggle the Icon */}
+                          {players.length > 0 ? (
+                            <PencilSimpleIcon size={22} className="text-clx-text-default w-auto! h-auto!" />
+                          ) : (
+                            <PlusIcon size={22} className="text-clx-text-default w-auto! h-auto!" />
+                          )}
+
+                          {/* 2. Toggle the Text */}
+                          <span className="font-bold text-clx-text-default">
+                            {players.length > 0 ? "Edit" : "Add"}
+                          </span>
+                        </Button>
+                      </DrawerTrigger>
+                      <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={false}>
+                        <DrawerHeader className="border-b border-clx-border-default px-4 pb-4 pt-6 shrink-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <DrawerClose asChild>
+                                <button type="button" className="text-clx-icon-default">
+                                  <XIcon size={24} />
+                                </button>
+                              </DrawerClose>
+                              <DrawerTitle className="text-xl font-bold text-clx-text-default">
+                                Players
+                              </DrawerTitle>
+                            </div>
+                            <DrawerClose asChild>
+                              <button type="button" className="text-lg text-clx-text-accent font-normal">
+                                Done
+                              </button>
+                            </DrawerClose>
+                          </div>
+                        </DrawerHeader>
+
+                        <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+                          {/* Input section */}
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <Label className="text-base font-semibold text-clx-text-default">
+                                Input player name
+                              </Label>
+                              <Textarea
+                                placeholder="e.g callie, mayo, eckel, jojo"
+                                className="h-20 text-base border-clx-border-textfield resize-none"
+                                value={playerInput}
+                                onChange={(e) => setPlayerInput(e.target.value)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <p className="text-sm text-clx-text-default">
+                                Bulk add player names separated by commas or new lines.
+                              </p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="h-10 px-4 border-clx-border-textfield rounded-lg gap-2 shrink-0"
+                                onClick={handleAddPlayers}
+                              >
+                                <PlusIcon size={24} className="text-clx-text-default" />
+                                <span className="font-bold text-clx-text-default">Add</span>
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Players list section */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-base font-semibold text-clx-text-default">Players list</p>
+                              <p className="text-sm text-clx-text-secondary">
+                                Total: <span className="text-clx-text-default">{players.length} players</span>
+                              </p>
+                            </div>
+
+                            {players.length === 0 ? (
+                              <div className="py-20 text-center">
+                                <p className="text-sm text-clx-text-placeholder">No players added yet</p>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col gap-2">
+                                {players.map((player, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center gap-3 h-12 px-4 py-2 bg-clx-bg-neutral-bold rounded-md border-0"
+                                  >
+                                    <span className="text-sm text-clx-text-default">{index + 1}.</span>
+                                    <span className="flex-1 text-sm font-semibold text-clx-text-default truncate">
+                                      {player}
+                                    </span>
+                                    <div className="flex items-center gap-4">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditPlayer(index)}
+                                        className="text-clx-icon-default hover:text-clx-icon-accent"
+                                      >
+                                        <PencilSimpleIcon size={20} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeletePlayer(index)}
+                                        className="text-clx-icon-error hover:text-red-700"
+                                      >
+                                        <MinusCircleIcon size={20} weight="fill" className="text-clx-icon-danger" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </DrawerContent>
+                    </Drawer>
+                  </div>
+                  {errors.players && (
+                    <div className="w-auto text-center">
+                      <p className="text-sm text-clx-text-danger">{errors.players.message}</p>
+                    </div>
+                  )}
+                  <div className="flex gap-2.5 w-full flex-wrap">
+                    {players.map((player, index) => (
+                      <Badge key={index} className="text-base min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">{player}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </Field>
             </div>
-            <Button
-              variant="outline"
-              className="h-11 px-4! border-clx-border-textfield rounded-lg gap-1 text-base"
-              onClick={() => {
-                // TODO: Navigate to add players page later
-                toast.info("Add players feature coming soon!");
-              }}
-            >
-              <PlusIcon size={24} className="text-clx-text-default" />
-              <span className="font-bold text-clx-text-default">Add</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+          </FieldGroup>
 
-      {/* Action buttons - fixed at bottom */}
-      <div className="p-3 space-y-2">
-        <Button
-          className="w-full text-base h-12 bg-clx-bg-accent text-white font-bold rounded-lg hover:bg-clx-bg-accent/90"
-          onClick={handleCreate}
-        >
-          Create
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full h-12 text-clx-text-secondary font-medium rounded-lg"
-          onClick={handleCancel}
-        >
-          Cancel
-        </Button>
+          {/* Action buttons - fixed at bottom */}
+          <Field>
+            <div className="p-3 space-y-2">
+              <Button
+                type="submit"
+                variant={"default"}
+                className="w-full text-base h-12 bg-clx-bg-accent text-white font-bold rounded-lg hover:bg-blue-700"
+              >
+                Create
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full h-12 text-clx-text-secondary font-medium rounded-lg"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+            </div>
+          </Field>
+        </form>
       </div>
     </main>
   );
