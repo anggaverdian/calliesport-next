@@ -93,9 +93,9 @@ export default function Home() {
             <Link href="/create-tournament">
               <Button
                 size="lg"
-                className="bg-clx-bg-accent rounded-full text-white font-bold pl-4 pr-5 h-11 shadow-lg active:bg-blue-700 active:scale-95 transition-all select-none"
+                className="bg-clx-bg-accent text-base rounded-full text-white font-bold pl-4 pr-5 h-11 shadow-lg active:bg-blue-700 active:scale-95 transition-all select-none"
               >
-                <PlusIcon size={24} className="w-auto! h-auto!" />
+                <PlusIcon size={20} className="w-auto! h-auto!" />
                 Create
               </Button>
             </Link>

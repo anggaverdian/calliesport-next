@@ -64,10 +64,11 @@ export default function TournamentItem({ tournament, onView, onDelete }: Tournam
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="shrink-0 p-2 rounded-lg hover:bg-clx-bg-neutral-bold transition-colors"
+            className="shrink-0 p-2 rounded-lg hover:bg-clx-bg-neutral-bold active:bg-clx-bg-neutral-hover transition-colors data-[state=open]:bg-clx-bg-neutral-hover"
             onClick={(e) => e.stopPropagation()}
+            
           >
-            <DotsThreeIcon size={18} weight="bold" className="text-clx-icon-default" />
+            <DotsThreeIcon size={24} weight="bold" className="text-clx-icon-dark" />
           </button>
         </PopoverTrigger>
         <PopoverContent

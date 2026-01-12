@@ -9,7 +9,8 @@ export const createTournamentSchema = z.object({
   pointType: z.string(),
   players: z
     .array(z.string())
-    .min(4, "Add at least 4 players"),
+    .min(4, "Add at least 4 players")
+    .max(12, "Maximum 12 players allowed"),
 });
 
 export type CreateTournamentFormData = z.infer<typeof createTournamentSchema>;

@@ -100,6 +100,23 @@ export default function CreateTournament() {
       .filter((name) => name.length > 0);
 
     if (newPlayers.length > 0) {
+      const totalPlayers = players.length + newPlayers.length;
+
+      // Check if adding these players would exceed max limit
+      if (totalPlayers > 12) {
+        const canAdd = 12 - players.length;
+        if (canAdd <= 0) {
+          toast.error("Maximum 12 players allowed");
+          return;
+        }
+        // Only add up to the limit
+        const playersToAdd = newPlayers.slice(0, canAdd);
+        setValue("players", [...players, ...playersToAdd], { shouldValidate: true });
+        setPlayerInput("");
+        toast.success(`Added ${playersToAdd.length} player(s). Maximum 12 players reached.`);
+        return;
+      }
+
       setValue("players", [...players, ...newPlayers], { shouldValidate: true });
       setPlayerInput("");
       toast.success(`Added ${newPlayers.length} player(s)!`);
