@@ -49,8 +49,8 @@ export default function AppBarTournamentDetail({
           <div className="shrink-0">
             <Image
               src={icon}
-              width={14}
-              height={12}
+              width={32}
+              height={32}
               alt={teamTypeNames[tournament.teamType]}
             />
           </div>
