@@ -229,18 +229,18 @@ export default function TournamentDetailPage() {
         onTabChange={handleTabChange}
       />
 
-      {/* Tournament Banners */}
-      {bannerType && (
-        <TournamentBanner
-          type={bannerType}
-          skippedRoundsCount={skippedRoundsInSet1.length}
-          onViewClick={() => setIsSkippedRoundsModalOpen(true)}
-          onAddRoundClick={handleAddMoreRounds}
-          onEndGameClick={handleEndGame}
-        />
-      )}
-
       {activeTab === "round" && (
+        <>
+          {/* Tournament Banners - only show on Round tab */}
+          {bannerType && (
+            <TournamentBanner
+              type={bannerType}
+              skippedRoundsCount={skippedRoundsInSet1.length}
+              onViewClick={() => setIsSkippedRoundsModalOpen(true)}
+              onAddRoundClick={handleAddMoreRounds}
+              onEndGameClick={handleEndGame}
+            />
+          )}
         <div className="flex-1 p-4 space-y-4">
           {/* Round navigation */}
           <div className="flex items-center justify-between px-3">
@@ -301,6 +301,7 @@ export default function TournamentDetailPage() {
             </div>
           )}
         </div>
+        </>
       )}
 
       {activeTab === "ranking" && (
