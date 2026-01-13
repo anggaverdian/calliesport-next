@@ -48,16 +48,16 @@ export default function ScoreInputModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[360px] rounded-md p-0 gap-0">
+      <DialogContent className="max-w-[320px] rounded-md p-0 gap-0">
         <DialogHeader className="p-4 pb-2">
           <DialogTitle className="text-base font-semibold">
-            Enter Score for {teamPlayers.join(" & ")}
+            Score {teamPlayers.join(" & ")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="p-4">
           {/* Score grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-6 gap-2">
             {scoreOptions.map((score) => {
               const isSelected = score === currentScore;
               return (
