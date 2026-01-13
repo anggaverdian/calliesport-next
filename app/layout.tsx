@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import { DM_Sans, Quantico } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
 const GlobalFont = DM_Sans({
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
+});
+
+const quantico = Quantico({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-score', // This creates a CSS variable
 });
 
 export const metadata: Metadata = {

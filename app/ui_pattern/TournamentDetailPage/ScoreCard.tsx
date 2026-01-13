@@ -62,7 +62,7 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
             onClick={onScoreClickA}
             className={`flex flex-col items-center justify-center w-[52px] h-12 rounded-md ${getScoreButtonStyle(teamAWins, teamBWins)}`}
           >
-            <span className="font-score! text-[28px] leading-7">
+            <span className="font-score text-[28px] leading-7">
               {match.scoreA.toString().padStart(2, "0")}
             </span>
           </button>
@@ -72,7 +72,7 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
             onClick={onScoreClickB}
             className={`flex flex-col items-center justify-center w-[52px] h-12 rounded-md ${getScoreButtonStyle(teamBWins, teamAWins)}`}
           >
-            <span className="font-score! text-[28px] leading-7">
+            <span className="font-score text-[28px] leading-7">
               {match.scoreB.toString().padStart(2, "0")}
             </span>
           </button>
