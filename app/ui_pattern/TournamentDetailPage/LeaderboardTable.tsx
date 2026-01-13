@@ -176,10 +176,28 @@ function calculatePlayerStats(tournament: Tournament): PlayerStats[] {
     ...Object.values(stats).map((s) => s.matchesPlayed)
   );
 
+  // Get compensation multiplier based on point type
+  const getCompensationMultiplier = (pointType: string): number => {
+    switch (pointType) {
+      case "16":
+        return 8;
+      case "21":
+        return 10;
+      case "best4":
+        return 2;
+      case "best5":
+        return 2;
+      default:
+        return 10;
+    }
+  };
+
+  const multiplier = getCompensationMultiplier(tournament.pointType);
+
   // Calculate compensation points and final score
   Object.values(stats).forEach((player) => {
-    // M+ = (maxMP - playerMP) * 10
-    player.compensationPoints = (maxMatchesPlayed - player.matchesPlayed) * 10;
+    // M+ = (maxMP - playerMP) * multiplier
+    player.compensationPoints = (maxMatchesPlayed - player.matchesPlayed) * multiplier;
     // Final score = total match points + compensation
     player.finalScore = player.totalPoints + player.compensationPoints;
   });
