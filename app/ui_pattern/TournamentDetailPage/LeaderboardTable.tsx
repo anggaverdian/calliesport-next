@@ -78,7 +78,16 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                   {player.wins}-{player.losses}-{player.ties}
                 </TableCell>
                 <TableCell className="py-3 text-xs text-clx-text-success">
-                  {player.compensationPoints > 0 ? `+${player.compensationPoints}` : ""}
+                  {(() => {
+                    // Check if player has compensation points
+                    if (player.compensationPoints > 0) {
+                      // Show +points (e.g., +10, +20)
+                      return `+${player.compensationPoints}`;
+                    } else {
+                      // Show nothing if no compensation
+                      return "";
+                    }
+                  })()}
                 </TableCell>
                 <TableCell
                   className={`py-3 text-center text-sm font-semibold ${

@@ -126,6 +126,25 @@ function getTeamKey(team: string[]): string {
   return [...team].sort().join("+");
 }
 
+// Shuffle array randomly (Fisher-Yates algorithm)
+function shuffleArray<T>(array: T[]): T[] {
+  // Create a copy so we don't modify the original array
+  const shuffled = [...array];
+
+  // Loop from the last element to the second element
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i
+    const randomIndex = Math.floor(Math.random() * (i + 1));
+
+    // Swap the current element with the random element
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[randomIndex];
+    shuffled[randomIndex] = temp;
+  }
+
+  return shuffled;
+}
+
 // Generate tournament rounds with balanced pairing and fair rest times
 export function generateTournamentRounds(players: string[]): Round[] {
   const totalRounds = calculateRounds(players.length);
@@ -134,8 +153,11 @@ export function generateTournamentRounds(players: string[]): Round[] {
     return [];
   }
 
-  // Generate all possible unique matches as templates
-  const allMatchTemplates = generateAllMatches(players);
+  // Shuffle players randomly so round 1 is not always the same
+  const shuffledPlayers = shuffleArray(players);
+
+  // Generate all possible unique matches as templates (using shuffled players)
+  const allMatchTemplates = generateAllMatches(shuffledPlayers);
 
   // Track play count and last played round for each player
   const playCount: Record<string, number> = {};
@@ -143,8 +165,8 @@ export function generateTournamentRounds(players: string[]): Round[] {
   // Track when each team pairing last played together
   const teamLastPlayed: Record<string, number> = {};
 
-  // Initialize tracking
-  players.forEach(player => {
+  // Initialize tracking (using shuffled players)
+  shuffledPlayers.forEach(player => {
     playCount[player] = 0;
     lastPlayedRound[player] = -Infinity; // Never played
   });
