@@ -2,16 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeftIcon, ArrowRightIcon, DotsThreeIcon, CheckCircleIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
 import AppBarTournamentDetail from "@/app/ui_pattern/AppBar/AppBarTournamentDetail";
 import ScoreCard from "@/app/ui_pattern/TournamentDetailPage/ScoreCard";
 import ScoreInputModal from "@/app/ui_pattern/TournamentDetailPage/ScoreInputModal";
 import LeaderboardTable from "@/app/ui_pattern/TournamentDetailPage/LeaderboardTable";
+import TournamentBanner from "@/app/ui_pattern/TournamentDetailPage/TournamentBanner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Tournament,
   getTournamentById,
   updateMatchScore,
   getMaxScore,
+  extendTournament,
+  endTournament,
+  calculateRounds,
 } from "@/utils/tournament";
 import { toast } from "sonner";
 
@@ -32,6 +45,7 @@ export default function TournamentDetailPage() {
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [selectedMatchIndex, setSelectedMatchIndex] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<"A" | "B">("A");
+  const [isSkippedRoundsModalOpen, setIsSkippedRoundsModalOpen] = useState(false);
 
   // Update URL when tab or round changes
   const updateUrl = (tab: string, round: number) => {
@@ -95,6 +109,11 @@ export default function TournamentDetailPage() {
   };
 
   const handleScoreClick = (matchIndex: number, team: "A" | "B") => {
+    // Prevent score input if tournament is ended
+    if (tournament.isEnded) {
+      toast.error("Tournament is already completed. Scores cannot be changed.");
+      return;
+    }
     setSelectedMatchIndex(matchIndex);
     setSelectedTeam(team);
     setIsScoreModalOpen(true);
@@ -120,6 +139,88 @@ export default function TournamentDetailPage() {
 
   const isRoundCompleted = currentRoundData?.matches.every(m => m.isCompleted) ?? false;
 
+  // Calculate initial rounds count (set 1)
+  const initialRoundsCount = calculateRounds(tournament.players.length);
+
+  // Check if ALL initial rounds (set 1) are completed
+  const set1Rounds = tournament.rounds.slice(0, initialRoundsCount);
+  const allSet1RoundsCompleted = set1Rounds.every(r => r.matches.every(m => m.isCompleted));
+
+  // Check if ALL rounds (including extended set 2) are completed
+  const allRoundsCompleted = tournament.rounds.every(r => r.matches.every(m => m.isCompleted));
+
+  // Find skipped (incomplete) rounds in set 1
+  const getSkippedRoundsInSet1 = () => {
+    return set1Rounds
+      .filter(r => !r.matches.every(m => m.isCompleted))
+      .map(r => r.roundNumber);
+  };
+
+  // Check if last round of current set is completed
+  const lastRoundData = tournament.rounds.find(r => r.roundNumber === totalRounds);
+  const isLastRoundInputted = lastRoundData?.matches.every(m => m.isCompleted) ?? false;
+
+  // Check if last round of set 1 is inputted
+  const lastSet1RoundData = set1Rounds[set1Rounds.length - 1];
+  const isLastSet1RoundInputted = lastSet1RoundData?.matches.every(m => m.isCompleted) ?? false;
+
+  // Determine banner type to show
+  const getBannerType = (): "warning" | "addRound" | "endGame" | "completeTournament" | null => {
+    // Tournament already ended - show complete banner
+    if (tournament.isEnded) {
+      return "completeTournament";
+    }
+
+    // Set 2 exists and last round is inputted - show end game banner
+    if (tournament.hasExtended && isLastRoundInputted) {
+      return "endGame";
+    }
+
+    // Set 1 is complete (all rounds) and not extended yet - show add round banner
+    if (allSet1RoundsCompleted && !tournament.hasExtended) {
+      return "addRound";
+    }
+
+    // Last round of set 1 is inputted but there are skipped rounds - show warning banner
+    if (isLastSet1RoundInputted && !allSet1RoundsCompleted && !tournament.hasExtended) {
+      return "warning";
+    }
+
+    return null;
+  };
+
+  const bannerType = getBannerType();
+  const skippedRoundsInSet1 = getSkippedRoundsInSet1();
+
+  // Handle extending tournament with more rounds
+  const handleAddMoreRounds = () => {
+    const updatedTournament = extendTournament(tournament.id);
+    if (updatedTournament) {
+      setTournament(updatedTournament);
+      // Navigate to the first new round
+      const newRound = initialRoundsCount + 1;
+      setCurrentRound(newRound);
+      updateUrl(activeTab, newRound);
+      toast.success("Additional rounds have been added!");
+    }
+  };
+
+  // Handle ending the tournament
+  const handleEndGame = () => {
+    const updatedTournament = endTournament(tournament.id);
+    if (updatedTournament) {
+      setTournament(updatedTournament);
+      toast.success("Tournament completed!");
+    }
+  };
+
+  // Navigate to a specific round (used when clicking on skipped round in modal)
+  const handleGoToRound = (roundNumber: number) => {
+    setCurrentRound(roundNumber);
+    updateUrl(activeTab, roundNumber);
+    setIsSkippedRoundsModalOpen(false);
+  };
+
   return (
     <main className="w-auto min-h-screen bg-white flex flex-col">
       <AppBarTournamentDetail
@@ -127,6 +228,17 @@ export default function TournamentDetailPage() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
+
+      {/* Tournament Banners */}
+      {bannerType && (
+        <TournamentBanner
+          type={bannerType}
+          skippedRoundsCount={skippedRoundsInSet1.length}
+          onViewClick={() => setIsSkippedRoundsModalOpen(true)}
+          onAddRoundClick={handleAddMoreRounds}
+          onEndGameClick={handleEndGame}
+        />
+      )}
 
       {activeTab === "round" && (
         <div className="flex-1 p-4 space-y-4">
@@ -214,6 +326,39 @@ export default function TournamentDetailPage() {
           onSave={handleSaveScore}
         />
       )}
+
+      {/* Skipped Rounds Modal */}
+      <Dialog open={isSkippedRoundsModalOpen} onOpenChange={setIsSkippedRoundsModalOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Complete All Rounds</DialogTitle>
+            <DialogDescription>
+              You need to complete all rounds before adding more rounds. The following rounds are incomplete:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-2 py-2">
+            {skippedRoundsInSet1.map((roundNumber: number) => (
+              <Button
+                key={roundNumber}
+                variant="outline"
+                size="sm"
+                onClick={() => handleGoToRound(roundNumber)}
+                className="text-clx-text-accent border-clx-border-textfield"
+              >
+                Round {roundNumber}
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setIsSkippedRoundsModalOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

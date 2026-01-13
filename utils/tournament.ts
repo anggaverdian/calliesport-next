@@ -10,6 +10,8 @@ export interface Tournament {
   players: string[];
   rounds: Round[];
   createdAt: string;
+  hasExtended?: boolean;
+  isEnded?: boolean;
 }
 
 export interface Match {
@@ -53,6 +55,22 @@ export function calculateRounds(playerCount: number): number {
     12: 33,
   };
   return roundsMap[playerCount] || 0;
+}
+
+// Calculate extended rounds based on player count (for "Add More Rounds" feature)
+export function calculateExtendedRounds(playerCount: number): number {
+  const extendedRoundsMap: Record<number, number> = {
+    4: 6,   // Total: 12
+    5: 10,  // Total: 20
+    6: 15,  // Total: 30
+    7: 7,   // Total: 28 (Special Case)
+    8: 14,  // Total: 28
+    9: 9,   // Total: 27 (Special Case)
+    10: 10, // Total: 35 (Special Case)
+    11: 11, // Total: 33 (Special Case)
+    12: 9,  // Total: 42 (Special Case)
+  };
+  return extendedRoundsMap[playerCount] || 0;
 }
 
 // Get max score based on point type
@@ -377,6 +395,223 @@ export function deleteTournament(id: string): void {
   const tournaments = getTournaments();
   const filtered = tournaments.filter((t) => t.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+}
+
+// Extend tournament with additional rounds (can only be done once)
+export function extendTournament(tournamentId: string): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Can only extend once
+  if (tournament.hasExtended) return null;
+
+  const playerCount = tournament.players.length;
+  const additionalRoundsCount = calculateExtendedRounds(playerCount);
+
+  if (additionalRoundsCount === 0) return null;
+
+  // Generate additional rounds using the existing fair pairing logic
+  const additionalRounds = generateAdditionalRounds(
+    tournament.players,
+    tournament.rounds,
+    additionalRoundsCount
+  );
+
+  // Update round numbers to continue from where we left off
+  const lastRoundNumber = tournament.rounds.length;
+  additionalRounds.forEach((round, index) => {
+    round.roundNumber = lastRoundNumber + index + 1;
+  });
+
+  // Update tournament
+  tournament.rounds = [...tournament.rounds, ...additionalRounds];
+  tournament.hasExtended = true;
+
+  updateTournament(tournament);
+  return tournament;
+}
+
+// Generate additional rounds considering existing play history
+function generateAdditionalRounds(
+  players: string[],
+  existingRounds: Round[],
+  additionalRoundsCount: number
+): Round[] {
+  // Generate all possible unique matches as templates
+  const allMatchTemplates = generateAllMatches(players);
+
+  // Track play count from existing rounds
+  const playCount: Record<string, number> = {};
+  const lastPlayedRound: Record<string, number> = {};
+  const teamLastPlayed: Record<string, number> = {};
+
+  // Initialize tracking
+  players.forEach(player => {
+    playCount[player] = 0;
+    lastPlayedRound[player] = -Infinity;
+  });
+
+  // Count plays from existing rounds
+  existingRounds.forEach((round, roundIndex) => {
+    round.matches.forEach(match => {
+      const matchPlayers = [...match.teamA, ...match.teamB];
+      matchPlayers.forEach(player => {
+        playCount[player]++;
+        lastPlayedRound[player] = roundIndex;
+      });
+
+      const teamAKey = getTeamKey(match.teamA);
+      const teamBKey = getTeamKey(match.teamB);
+      teamLastPlayed[teamAKey] = roundIndex;
+      teamLastPlayed[teamBKey] = roundIndex;
+    });
+  });
+
+  const startingRoundIndex = existingRounds.length;
+  const selectedMatches: Match[] = [];
+  let availableMatches = [...allMatchTemplates];
+
+  // Select matches one by one for fair rest time ordering
+  for (let i = 0; i < additionalRoundsCount; i++) {
+    const roundIndex = startingRoundIndex + i;
+
+    // If pool is empty, refill it
+    if (availableMatches.length === 0) {
+      availableMatches = [...allMatchTemplates];
+    }
+
+    // Find the best match from available pool
+    let bestMatchIndex = -1;
+    let bestScore = Infinity;
+
+    for (let j = 0; j < availableMatches.length; j++) {
+      const match = availableMatches[j];
+      const matchPlayers = [...match.teamA, ...match.teamB];
+
+      // Check team pairing rest
+      const teamAKey = getTeamKey(match.teamA);
+      const teamBKey = getTeamKey(match.teamB);
+      const teamALastPlayed = teamLastPlayed[teamAKey] ?? -Infinity;
+      const teamBLastPlayed = teamLastPlayed[teamBKey] ?? -Infinity;
+      const minTeamRest = Math.min(
+        roundIndex - teamALastPlayed,
+        roundIndex - teamBLastPlayed
+      );
+
+      // Skip if either team just played in the previous round
+      if (minTeamRest <= 1) {
+        continue;
+      }
+
+      // Calculate player rest time
+      let minPlayerRest = Infinity;
+      let totalPlayCount = 0;
+
+      for (const player of matchPlayers) {
+        totalPlayCount += playCount[player];
+        const restTime = roundIndex - lastPlayedRound[player];
+        if (restTime < minPlayerRest) {
+          minPlayerRest = restTime;
+        }
+      }
+
+      // Score formula: prioritize players with lowest play count, then rest time
+      const score = totalPlayCount * 100 - minPlayerRest;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestMatchIndex = j;
+      }
+    }
+
+    // If no valid match found, relax the constraint
+    if (bestMatchIndex === -1) {
+      bestScore = Infinity;
+      for (let j = 0; j < availableMatches.length; j++) {
+        const match = availableMatches[j];
+        const matchPlayers = [...match.teamA, ...match.teamB];
+
+        let minPlayerRest = Infinity;
+        let totalPlayCount = 0;
+
+        for (const player of matchPlayers) {
+          totalPlayCount += playCount[player];
+          const restTime = roundIndex - lastPlayedRound[player];
+          if (restTime < minPlayerRest) {
+            minPlayerRest = restTime;
+          }
+        }
+
+        const score = totalPlayCount * 100 - minPlayerRest;
+
+        if (score < bestScore) {
+          bestScore = score;
+          bestMatchIndex = j;
+        }
+      }
+    }
+
+    if (bestMatchIndex !== -1) {
+      const bestMatch = availableMatches[bestMatchIndex];
+
+      // Remove selected match from available pool
+      availableMatches.splice(bestMatchIndex, 1);
+
+      // Add the selected match with new ID
+      selectedMatches.push({
+        id: generateId(),
+        teamA: [...bestMatch.teamA],
+        teamB: [...bestMatch.teamB],
+        scoreA: 0,
+        scoreB: 0,
+        isCompleted: false,
+      });
+
+      // Update tracking
+      const matchPlayers = [...bestMatch.teamA, ...bestMatch.teamB];
+      for (const player of matchPlayers) {
+        playCount[player]++;
+        lastPlayedRound[player] = roundIndex;
+      }
+
+      const teamAKey = getTeamKey(bestMatch.teamA);
+      const teamBKey = getTeamKey(bestMatch.teamB);
+      teamLastPlayed[teamAKey] = roundIndex;
+      teamLastPlayed[teamBKey] = roundIndex;
+    }
+  }
+
+  // Create rounds
+  const rounds: Round[] = [];
+
+  for (let i = 0; i < selectedMatches.length; i++) {
+    const match = selectedMatches[i];
+    const playingPlayers = [...match.teamA, ...match.teamB];
+    const restingPlayers = players.filter(p => !playingPlayers.includes(p));
+
+    rounds.push({
+      roundNumber: i + 1, // Will be updated by caller
+      matches: [match],
+      restingPlayers,
+    });
+  }
+
+  return rounds;
+}
+
+// End tournament (marks as completed, prevents further score input)
+export function endTournament(tournamentId: string): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Already ended
+  if (tournament.isEnded) return null;
+
+  tournament.isEnded = true;
+  updateTournament(tournament);
+  return tournament;
 }
 
 // Get point type display label
