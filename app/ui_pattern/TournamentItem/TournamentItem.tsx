@@ -32,6 +32,7 @@ interface TournamentItemProps {
 export default function TournamentItem({ tournament, onView, onDelete }: TournamentItemProps) {
   const rounds = calculateRounds(tournament.players.length);
   const icon = teamTypeIcons[tournament.teamType];
+  const pointType = tournament.pointType;
 
   return (
     <div
@@ -50,12 +51,13 @@ export default function TournamentItem({ tournament, onView, onDelete }: Tournam
 
       {/* Tournament info */}
       <div className="flex-1 min-w-0">
-        <p className="text-base font-semibold text-clx-text-default truncate">
+        <p className="text-lg font-semibold text-clx-text-default truncate tracking-tight mb-0.5">
           {tournament.name}
         </p>
-        <div className="flex gap-2 text-sm text-clx-text-secondary">
-          <span>{rounds} rounds</span>
-          <span>{tournament.players.length} players</span>
+        <div className="flex gap-1.5 text-xs text-clx-text-secondary">
+          <span>{rounds} rounds</span><span className="text-stone-300">|</span>
+          <span>{tournament.players.length} players</span><span className="text-stone-300">|</span>
+          <span>Point: {tournament.pointType}</span>
         </div>
       </div>
 

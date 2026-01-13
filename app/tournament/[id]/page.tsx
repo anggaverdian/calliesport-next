@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon, DotsThreeIcon, CheckCircleIcon } from "@phosphor-icons/react";
 import AppBarTournamentDetail from "@/app/ui_pattern/AppBar/AppBarTournamentDetail";
 import ScoreCard from "@/app/ui_pattern/TournamentDetailPage/ScoreCard";
 import ScoreInputModal from "@/app/ui_pattern/TournamentDetailPage/ScoreInputModal";
+import LeaderboardTable from "@/app/ui_pattern/TournamentDetailPage/LeaderboardTable";
 import {
   Tournament,
   getTournamentById,
@@ -17,26 +18,51 @@ import { toast } from "sonner";
 export default function TournamentDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const tournamentId = params.id as string;
+
+  // Get initial values from URL params
+  const tabParam = searchParams.get("tab") as "round" | "ranking" | "details" | null;
+  const roundParam = searchParams.get("round");
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentRound, setCurrentRound] = useState(1);
-  const [activeTab, setActiveTab] = useState<"round" | "ranking" | "details">("round");
+  const [currentRound, setCurrentRound] = useState(roundParam ? parseInt(roundParam, 10) : 1);
+  const [activeTab, setActiveTab] = useState<"round" | "ranking" | "details">(tabParam || "round");
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [selectedMatchIndex, setSelectedMatchIndex] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<"A" | "B">("A");
+
+  // Update URL when tab or round changes
+  const updateUrl = (tab: string, round: number) => {
+    const newParams = new URLSearchParams();
+    newParams.set("tab", tab);
+    newParams.set("round", round.toString());
+    router.replace(`/tournament/${tournamentId}?${newParams.toString()}`, { scroll: false });
+  };
+
+  const handleTabChange = (tab: "round" | "ranking" | "details") => {
+    setActiveTab(tab);
+    updateUrl(tab, currentRound);
+  };
 
   useEffect(() => {
     const data = getTournamentById(tournamentId);
     if (data) {
       setTournament(data);
+      // Validate round number from URL
+      if (roundParam) {
+        const parsedRound = parseInt(roundParam, 10);
+        if (parsedRound >= 1 && parsedRound <= data.rounds.length) {
+          setCurrentRound(parsedRound);
+        }
+      }
     } else {
       toast.error("Tournament not found");
       router.push("/");
     }
     setIsLoading(false);
-  }, [tournamentId, router]);
+  }, [tournamentId, router, roundParam]);
 
   if (isLoading || !tournament) {
     return (
@@ -54,13 +80,17 @@ export default function TournamentDetailPage() {
 
   const handlePreviousRound = () => {
     if (currentRound > 1) {
-      setCurrentRound(currentRound - 1);
+      const newRound = currentRound - 1;
+      setCurrentRound(newRound);
+      updateUrl(activeTab, newRound);
     }
   };
 
   const handleNextRound = () => {
     if (currentRound < totalRounds) {
-      setCurrentRound(currentRound + 1);
+      const newRound = currentRound + 1;
+      setCurrentRound(newRound);
+      updateUrl(activeTab, newRound);
     }
   };
 
@@ -95,7 +125,7 @@ export default function TournamentDetailPage() {
       <AppBarTournamentDetail
         tournament={tournament}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
       />
 
       {activeTab === "round" && (
@@ -107,7 +137,7 @@ export default function TournamentDetailPage() {
               type="button"
               onClick={handlePreviousRound}
               disabled={currentRound === 1}
-              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:bg-neutral-200"
             >
               <ArrowLeftIcon size={20} className="text-clx-text-secondary" />
             </button>
@@ -119,8 +149,8 @@ export default function TournamentDetailPage() {
               </span>
               <CheckCircleIcon
                 size={20}
-                weight={isRoundCompleted ? "fill" : "regular"}
-                className={isRoundCompleted ? "text-clx-icon-success" : "text-clx-icon-default"}
+                weight={isRoundCompleted ? "fill" : "fill"}
+                className={isRoundCompleted ? "text-clx-icon-success" : "text-clx-icon-subtle"}
               />
             </div>
 
@@ -129,7 +159,7 @@ export default function TournamentDetailPage() {
               type="button"
               onClick={handleNextRound}
               disabled={currentRound === totalRounds}
-              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:bg-neutral-200"
             >
               <ArrowRightIcon size={20} className="text-clx-text-secondary" />
             </button>
@@ -163,7 +193,7 @@ export default function TournamentDetailPage() {
 
       {activeTab === "ranking" && (
         <div className="flex-1 p-4">
-          <RankingTab tournament={tournament} />
+          <LeaderboardTable tournament={tournament} />
         </div>
       )}
 
@@ -185,69 +215,6 @@ export default function TournamentDetailPage() {
         />
       )}
     </main>
-  );
-}
-
-// Ranking Tab Component
-function RankingTab({ tournament }: { tournament: Tournament }) {
-  // Calculate player rankings based on wins and points
-  const playerStats: Record<string, { wins: number; points: number; played: number }> = {};
-
-  tournament.players.forEach(player => {
-    playerStats[player] = { wins: 0, points: 0, played: 0 };
-  });
-
-  tournament.rounds.forEach(round => {
-    round.matches.forEach(match => {
-      if (match.isCompleted) {
-        // Update stats for Team A
-        match.teamA.forEach(player => {
-          playerStats[player].played++;
-          playerStats[player].points += match.scoreA;
-          if (match.scoreA > match.scoreB) {
-            playerStats[player].wins++;
-          }
-        });
-
-        // Update stats for Team B
-        match.teamB.forEach(player => {
-          playerStats[player].played++;
-          playerStats[player].points += match.scoreB;
-          if (match.scoreB > match.scoreA) {
-            playerStats[player].wins++;
-          }
-        });
-      }
-    });
-  });
-
-  // Sort by wins, then by points
-  const rankings = Object.entries(playerStats)
-    .sort((a, b) => {
-      if (b[1].wins !== a[1].wins) return b[1].wins - a[1].wins;
-      return b[1].points - a[1].points;
-    });
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between px-2 py-2 text-sm text-clx-text-secondary">
-        <span className="w-8">#</span>
-        <span className="flex-1">Player</span>
-        <span className="w-12 text-center">W</span>
-        <span className="w-12 text-center">Pts</span>
-      </div>
-      {rankings.map(([player, stats], index) => (
-        <div
-          key={player}
-          className="flex items-center justify-between px-2 py-3 bg-clx-bg-neutral-bold rounded-lg"
-        >
-          <span className="w-8 text-sm font-semibold text-clx-text-default">{index + 1}</span>
-          <span className="flex-1 text-sm font-medium text-clx-text-default">{player}</span>
-          <span className="w-12 text-center text-sm text-clx-text-default">{stats.wins}</span>
-          <span className="w-12 text-center text-sm text-clx-text-default">{stats.points}</span>
-        </div>
-      ))}
-    </div>
   );
 }
 

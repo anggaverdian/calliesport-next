@@ -11,13 +11,17 @@ interface ScoreCardProps {
 }
 
 export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: ScoreCardProps) {
-  // Determine winner/loser when match is completed
+  // Determine winner/loser/tie when match is completed
   const isCompleted = match.isCompleted;
-  const teamAWins = isCompleted && match.scoreA > match.scoreB;
-  const teamBWins = isCompleted && match.scoreB > match.scoreA;
+  const isTie = isCompleted && match.scoreA === match.scoreB;
+  const teamAWins = isCompleted && !isTie && match.scoreA > match.scoreB;
+  const teamBWins = isCompleted && !isTie && match.scoreB > match.scoreA;
 
   // Score button styles
   const getScoreButtonStyle = (isWinner: boolean, isLoser: boolean) => {
+    if (isTie) {
+      return "bg-clx-bg-success text-clx-text-white";
+    }
     if (isWinner) {
       return "bg-clx-bg-success text-white";
     }
@@ -28,16 +32,22 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
     return "bg-clx-bg-dark text-white";
   };
 
-  // Avatar styles for winner/loser
+  // Avatar styles for winner/loser/tie
   const getAvatarStyle = (isWinner: boolean) => {
+    if (isTie) {
+      return "bg-orange-50"; // Tie uses default orange style
+    }
     if (isWinner) {
       return "bg-orange-50";
     }
-    // Loser or not completed uses neutral style when completed
+    // Loser uses neutral style when completed
     return "bg-white";
   };
 
   const getAvatarIconStyle = (isWinner: boolean) => {
+    if (isTie) {
+      return "text-orange-500"; // Tie uses default orange style
+    }
     if (isWinner) {
       return "text-orange-500";
     }
@@ -45,6 +55,9 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
   };
 
   const getPlayerTextStyle = (isWinner: boolean) => {
+    if (isTie) {
+      return "text-clx-text-default"; // Tie uses default text style
+    }
     if (isWinner) {
       return "text-clx-text-default";
     }

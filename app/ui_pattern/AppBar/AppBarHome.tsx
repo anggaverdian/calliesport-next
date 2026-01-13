@@ -16,7 +16,7 @@ export default function AppBarHome() {
                   </div>
               </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 text-clx-icon-disabled">
               <div className="">
                     <MagnifyingGlassIcon size={24} />
               </div>
