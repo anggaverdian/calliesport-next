@@ -40,12 +40,13 @@ export default function AppBarTournamentDetail({
     <nav className="w-full bg-white border-b border-clx-border-default">
       {/* Back button */}
       <div className="flex flex-col gap-4 px-4 pt-4 pb-2">
-        <Link href="/" className="w-fit">
-          <Image src={back_button} width={24} height={24} alt="Back" />
-        </Link>
+
 
         {/* Tournament info */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pt-4">
+          <Link href="/" className="w-fit">
+            <Image src={back_button} width={24} height={24} alt="Back" />
+          </Link>
           <div className="shrink-0">
             <Image
               src={icon}
