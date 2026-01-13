@@ -84,7 +84,7 @@ export default function TournamentDetailPage() {
 
     if (updatedTournament) {
       setTournament(updatedTournament);
-      toast.success("Score saved!");
+      //toast.success("Score saved!");
     }
   };
 
