@@ -358,6 +358,239 @@ export function generateTournamentRounds(players: string[]): Round[] {
   return rounds;
 }
 
+// Generate tournament rounds with a specific first match
+// This allows users to set who plays in round 1
+export function generateTournamentRoundsWithFirstMatch(
+  players: string[],
+  teamA: [string, string],
+  teamB: [string, string]
+): Round[] {
+  const totalRounds = calculateRounds(players.length);
+
+  if (totalRounds === 0 || players.length < 4) {
+    return [];
+  }
+
+  // Generate all possible unique matches as templates
+  const allMatchTemplates = generateAllMatches(players);
+
+  // Track play count and last played round for each player
+  const playCount: Record<string, number> = {};
+  const lastPlayedRound: Record<string, number> = {};
+  // Track when each team pairing last played together
+  const teamLastPlayed: Record<string, number> = {};
+
+  // Initialize tracking
+  players.forEach(player => {
+    playCount[player] = 0;
+    lastPlayedRound[player] = -Infinity;
+  });
+
+  const selectedMatches: Match[] = [];
+
+  // Create the first match with the user-specified teams
+  const firstMatch: Match = {
+    id: generateId(),
+    teamA: [...teamA],
+    teamB: [...teamB],
+    scoreA: 0,
+    scoreB: 0,
+    isCompleted: false,
+  };
+  selectedMatches.push(firstMatch);
+
+  // Update tracking for first match
+  const firstMatchPlayers = [...teamA, ...teamB];
+  for (const player of firstMatchPlayers) {
+    playCount[player]++;
+    lastPlayedRound[player] = 0;
+  }
+  const firstTeamAKey = getTeamKey(teamA);
+  const firstTeamBKey = getTeamKey(teamB);
+  teamLastPlayed[firstTeamAKey] = 0;
+  teamLastPlayed[firstTeamBKey] = 0;
+
+  // Remove the first match from available pool if it exists
+  let availableMatches = allMatchTemplates.filter(m => {
+    const matchTeamAKey = getTeamKey(m.teamA);
+    const matchTeamBKey = getTeamKey(m.teamB);
+    // Check if this match is the same as the first match (regardless of team order)
+    const isSameMatch =
+      (matchTeamAKey === firstTeamAKey && matchTeamBKey === firstTeamBKey) ||
+      (matchTeamAKey === firstTeamBKey && matchTeamBKey === firstTeamAKey);
+    return !isSameMatch;
+  });
+
+  // Select remaining matches
+  for (let roundIndex = 1; roundIndex < totalRounds; roundIndex++) {
+    // If pool is empty, refill it (excluding already selected matches)
+    if (availableMatches.length === 0) {
+      availableMatches = allMatchTemplates.filter(template => {
+        const templateTeamAKey = getTeamKey(template.teamA);
+        const templateTeamBKey = getTeamKey(template.teamB);
+        // Check if this template was already selected
+        return !selectedMatches.some(selected => {
+          const selectedTeamAKey = getTeamKey(selected.teamA);
+          const selectedTeamBKey = getTeamKey(selected.teamB);
+          return (templateTeamAKey === selectedTeamAKey && templateTeamBKey === selectedTeamBKey) ||
+                 (templateTeamAKey === selectedTeamBKey && templateTeamBKey === selectedTeamAKey);
+        });
+      });
+      // If still empty after filtering, use all templates
+      if (availableMatches.length === 0) {
+        availableMatches = [...allMatchTemplates];
+      }
+    }
+
+    // Find the best match from available pool
+    let bestMatchIndex = -1;
+    let bestScore = Infinity;
+
+    for (let i = 0; i < availableMatches.length; i++) {
+      const match = availableMatches[i];
+      const matchPlayers = [...match.teamA, ...match.teamB];
+
+      // Check team pairing rest (avoid same team playing consecutively)
+      const teamAKey = getTeamKey(match.teamA);
+      const teamBKey = getTeamKey(match.teamB);
+      const teamALastPlayed = teamLastPlayed[teamAKey] ?? -Infinity;
+      const teamBLastPlayed = teamLastPlayed[teamBKey] ?? -Infinity;
+      const minTeamRest = Math.min(
+        roundIndex - teamALastPlayed,
+        roundIndex - teamBLastPlayed
+      );
+
+      // Skip if either team just played in the previous round
+      if (minTeamRest <= 1 && roundIndex > 0) {
+        continue;
+      }
+
+      // Calculate player rest time (minimum among all 4 players)
+      let minPlayerRest = Infinity;
+      let totalPlayCount = 0;
+
+      for (const player of matchPlayers) {
+        totalPlayCount += playCount[player];
+        const restTime = roundIndex - lastPlayedRound[player];
+        if (restTime < minPlayerRest) {
+          minPlayerRest = restTime;
+        }
+      }
+
+      // Score formula
+      const score = totalPlayCount * 100 - minPlayerRest;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestMatchIndex = i;
+      }
+    }
+
+    // If no valid match found, relax the constraint
+    if (bestMatchIndex === -1) {
+      bestScore = Infinity;
+      for (let i = 0; i < availableMatches.length; i++) {
+        const match = availableMatches[i];
+        const matchPlayers = [...match.teamA, ...match.teamB];
+
+        let minPlayerRest = Infinity;
+        let totalPlayCount = 0;
+
+        for (const player of matchPlayers) {
+          totalPlayCount += playCount[player];
+          const restTime = roundIndex - lastPlayedRound[player];
+          if (restTime < minPlayerRest) {
+            minPlayerRest = restTime;
+          }
+        }
+
+        const score = totalPlayCount * 100 - minPlayerRest;
+
+        if (score < bestScore) {
+          bestScore = score;
+          bestMatchIndex = i;
+        }
+      }
+    }
+
+    if (bestMatchIndex !== -1) {
+      const bestMatch = availableMatches[bestMatchIndex];
+
+      // Remove selected match from available pool
+      availableMatches.splice(bestMatchIndex, 1);
+
+      // Add the selected match with new ID
+      selectedMatches.push({
+        id: generateId(),
+        teamA: [...bestMatch.teamA],
+        teamB: [...bestMatch.teamB],
+        scoreA: 0,
+        scoreB: 0,
+        isCompleted: false,
+      });
+
+      // Update tracking for players in this match
+      const matchPlayers = [...bestMatch.teamA, ...bestMatch.teamB];
+      for (const player of matchPlayers) {
+        playCount[player]++;
+        lastPlayedRound[player] = roundIndex;
+      }
+
+      // Update team pairing tracking
+      const teamAKey = getTeamKey(bestMatch.teamA);
+      const teamBKey = getTeamKey(bestMatch.teamB);
+      teamLastPlayed[teamAKey] = roundIndex;
+      teamLastPlayed[teamBKey] = roundIndex;
+    }
+  }
+
+  // Create rounds (1 match per round)
+  const rounds: Round[] = [];
+
+  for (let i = 0; i < selectedMatches.length; i++) {
+    const match = selectedMatches[i];
+    const playingPlayers = [...match.teamA, ...match.teamB];
+    const restingPlayers = players.filter(p => !playingPlayers.includes(p));
+
+    rounds.push({
+      roundNumber: i + 1,
+      matches: [match],
+      restingPlayers,
+    });
+  }
+
+  return rounds;
+}
+
+// Regenerate tournament rounds with a specific first match lineup
+export function regenerateTournamentWithFirstMatch(
+  tournamentId: string,
+  teamA: [string, string],
+  teamB: [string, string]
+): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Only allow regeneration for Standard Americano
+  if (!isTeamTypeSupported(tournament.teamType)) return null;
+
+  // Generate new rounds with the specified first match
+  const newRounds = generateTournamentRoundsWithFirstMatch(
+    tournament.players,
+    teamA,
+    teamB
+  );
+
+  // Reset tournament state
+  tournament.rounds = newRounds;
+  tournament.hasExtended = false;
+  tournament.isEnded = false;
+
+  updateTournament(tournament);
+  return tournament;
+}
+
 // Get all tournaments from localStorage with safe parsing and validation
 export function getTournaments(): Tournament[] {
   if (typeof window === "undefined") return [];

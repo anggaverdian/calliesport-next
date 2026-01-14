@@ -318,7 +318,7 @@ export default function CreateTournament() {
                         </Button>
                       </DrawerTrigger>
                       <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={false}>
-                        <DrawerHeader className="border-b border-clx-border-default px-4 pb-4 pt-6 shrink-0">
+                        <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-default px-4 pb-4 pt-4 shrink-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <DrawerClose asChild>
@@ -326,7 +326,7 @@ export default function CreateTournament() {
                                   <XIcon size={24} />
                                 </button>
                               </DrawerClose>
-                              <DrawerTitle className="text-xl font-bold text-clx-text-default">
+                              <DrawerTitle className="text-lg font-bold text-clx-text-default">
                                 Players
                               </DrawerTitle>
                             </div>

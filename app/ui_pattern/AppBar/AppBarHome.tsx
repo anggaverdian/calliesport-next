@@ -5,7 +5,7 @@ import Brand_Logo from "../../../public/calliesport-logo.svg";
 
 export default function AppBarHome() {
   return (
-    <nav className="container w-full">
+    <nav className="container w-full sticky top-0 z-50 bg-white">
         <div className="flex items-center px-4 pt-4 pb-2">
           <div className="w-full bg-bg-dark">
               <div className="flex gap-4">

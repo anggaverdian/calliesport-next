@@ -78,14 +78,16 @@ export default function Home() {
         // Tournament list
         <>
           <div className="flex-1 p-4 space-y-3">
-            {tournaments.map((tournament) => (
-              <TournamentItem
-                key={tournament.id}
-                tournament={tournament}
-                onView={handleView}
-                onDelete={handleDelete}
-              />
-            ))}
+            {[...tournaments]
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map((tournament) => (
+                <TournamentItem
+                  key={tournament.id}
+                  tournament={tournament}
+                  onView={handleView}
+                  onDelete={handleDelete}
+                />
+              ))}
           </div>
 
           {/* Floating create button */}

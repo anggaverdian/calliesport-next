@@ -146,7 +146,7 @@ export default function TournamentDetailPage() {
   const handleScoreClick = (matchIndex: number, team: "A" | "B") => {
     // Prevent score input if tournament is ended
     if (tournament.isEnded) {
-      toast.error("Tournament is already completed. Scores cannot be changed.");
+      toast.info("Tournament is already completed. Scores cannot be changed.");
       return;
     }
     setSelectedMatchIndex(matchIndex);
@@ -272,12 +272,21 @@ export default function TournamentDetailPage() {
     setIsSkippedRoundsModalOpen(false);
   };
 
+  // Handle tournament update from lineup regeneration
+  const handleTournamentUpdate = (updatedTournament: Tournament) => {
+    setTournament(updatedTournament);
+    // Reset to round 1 when lineup is regenerated
+    setCurrentRound(1);
+    updateUrl(activeTab, 1);
+  };
+
   return (
     <main className="w-auto min-h-screen bg-white flex flex-col">
       <AppBarTournamentDetail
         tournament={tournament}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        onTournamentUpdate={handleTournamentUpdate}
       />
 
       {activeTab === "round" && (
@@ -397,7 +406,7 @@ export default function TournamentDetailPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleGoToRound(roundNumber)}
-                className="text-clx-text-accent border-clx-border-textfield"
+                className="text-clx-text-default border-clx-border-textfield"
               >
                 Round {roundNumber}
               </Button>

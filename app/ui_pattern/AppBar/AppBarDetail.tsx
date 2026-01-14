@@ -15,7 +15,7 @@ export default function AppBarDetail() {
                   <Image src={back_button} width={24} height={24} alt="logo" />
                 </Link>
                   <div>
-                      <h2>Create tournament</h2>
+                      <h3>Create tournament</h3>
                   </div>
               </div>
           </div>

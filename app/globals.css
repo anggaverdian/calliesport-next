@@ -17,9 +17,9 @@
   /* Neutral/Gray */
   --color-neutral-gray-25: oklch(0.9841 0.0035 39.48); /*#fcf9f8*/
   --color-neutral-gray-50: oklch(0.9684 0.0062 75.41); /*#f7f4f0*/
-  --color-neutral-gray-100: #f1ebe4;
-  --color-neutral-gray-400: #dcd8d5;
-  --color-neutral-gray-500: #878582;
+  --color-neutral-gray-100: oklch(0.9428 0.0114 71.9); /*#f1ebe4;*/
+  --color-neutral-gray-400: oklch(0.8845 0.006 59.64); /*#dcd8d5;*/
+  --color-neutral-gray-500: oklch(0.6175 0.0051 78.29); /*#878582;*/
   --color-neutral-gray-600: oklch(0.4908 0.0061 67.68); /*#63605d;*/
   --color-neutral-gray-800: #3c3a3a;
   --color-neutral-dark: oklch(0.2938 0.0023 67.74); /*#2d2c2b;*/
@@ -98,7 +98,7 @@
   --font-weight-bold: 700;
 
   /* Letter Spacing */
-  --letter-spacing-normal: -0.6px;
+  --letter-spacing-normal: -0.2px;
   --letter-spacing-stretch: 0;
 
   /* Paragraph Spacing */
@@ -317,6 +317,22 @@
 }
 
 @layer utilities {
+  /* Slide-in from top animation for banners */
+  @keyframes slide-in-from-top {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in-from-top {
+    animation: slide-in-from-top 0.3s ease-out forwards;
+  }
+
    .clx-text-score {
     text-align: center;
     font-family: 'Quantico', sans-serif;
