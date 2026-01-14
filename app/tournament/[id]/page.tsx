@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
 import AppBarTournamentDetail from "@/app/ui_pattern/AppBar/AppBarTournamentDetail";
@@ -8,6 +9,7 @@ import ScoreCard from "@/app/ui_pattern/TournamentDetailPage/ScoreCard";
 import ScoreInputModal from "@/app/ui_pattern/TournamentDetailPage/ScoreInputModal";
 import LeaderboardTable from "@/app/ui_pattern/TournamentDetailPage/LeaderboardTable";
 import TournamentBanner from "@/app/ui_pattern/TournamentDetailPage/TournamentBanner";
+import electricIcon from "../../../public/electric.svg";
 import {
   Dialog,
   DialogContent,
@@ -99,8 +101,9 @@ export default function TournamentDetailPage() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
         />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="rounded-xl p-8 max-w-md">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 pt-24 text-center">
+          <Image src={electricIcon} width={48} height={48} alt="" />
+          <div className="rounded-xl p-8 pt-4 max-w-md">
             <h2 className="text-xl font-semibold text-clx-text-default mb-1">
               Coming Soon
             </h2>
@@ -422,8 +425,8 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-clx-bg-neutral-bold rounded-lg p-4 space-y-3">
-        <h3 className="text-base font-semibold text-clx-text-default">Tournament Info</h3>
+      <div className="bg-white px-1 space-y-3 border-b-1 pb-6">
+        <h3 className="font-semibold text-clx-text-default">Tournament Info</h3>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-clx-text-secondary">Name</span>
@@ -452,13 +455,16 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
         </div>
       </div>
 
-      <div className="bg-clx-bg-neutral-bold rounded-lg p-4 space-y-3">
-        <h3 className="text-base font-semibold text-clx-text-default">Players</h3>
+      <div className="bg-white rounded-lg px-1 py-2 space-y-3">
+        <div className="w-auto pb-1">
+          <h3 className="font-semibold text-clx-text-default">Players</h3>
+          <span className="text-sm">Total player: {tournament.players.length}</span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {tournament.players.map((player, index) => (
             <span
               key={index}
-              className="px-3 py-1 text-sm bg-white rounded-md text-clx-text-default"
+              className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
             >
               {player}
             </span>

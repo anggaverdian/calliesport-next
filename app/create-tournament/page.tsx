@@ -365,7 +365,7 @@ export default function CreateTournament() {
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="h-10 px-4 border-clx-border-textfield rounded-lg gap-2 shrink-0 disabled:opacity-50"
+                                className="h-10 px-4 pl-2! border-clx-border-textfield rounded-lg gap-2 shrink-0 disabled:opacity-50 disabled:bg-clx-bg-disabled"
                                 onClick={handleAddPlayers}
                                 disabled={!playerInput.trim()}
                               >
