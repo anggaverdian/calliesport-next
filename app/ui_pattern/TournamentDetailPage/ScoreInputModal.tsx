@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Match } from "@/utils/tournament";
 
@@ -53,6 +54,9 @@ export default function ScoreInputModal({
           <DialogTitle className="text-base font-semibold">
             Score {teamPlayers.join(" & ")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Select a score for {teamPlayers.join(" and ")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-4">

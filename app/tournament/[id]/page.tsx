@@ -93,23 +93,23 @@ export default function TournamentDetailPage() {
   // Show "under development" message for unsupported team types
   if (!isTeamTypeSupported(tournament.teamType)) {
     return (
-      <main className="w-auto min-h-screen bg-white flex flex-col">
+      <main className="w-auto bg-white flex flex-col">
         <AppBarTournamentDetail
           tournament={tournament}
           activeTab={activeTab}
           onTabChange={handleTabChange}
         />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="bg-clx-bg-neutral-bold rounded-xl p-8 max-w-md">
-            <h2 className="text-xl font-semibold text-clx-text-default mb-3">
+          <div className="rounded-xl p-8 max-w-md">
+            <h2 className="text-xl font-semibold text-clx-text-default mb-1">
               Coming Soon
             </h2>
-            <p className="text-clx-text-secondary mb-4">
+            <p className="text-clx-text-secondary mb-6 text-sm">
               {teamTypeNames[tournament.teamType]} is currently under development.
-              Right now, you can only use <span className="font-medium">Standard Americano</span> for tournaments.
+              Right now, you can only use <span className="font-medium text-clx-text-accent">Standard Americano</span> for tournaments.
             </p>
             <Button
-              variant="secondary"
+              variant="outline"
               onClick={() => router.push("/")}
             >
               Back to Home
@@ -176,14 +176,21 @@ export default function TournamentDetailPage() {
 
   // Check if ALL initial rounds (set 1) are completed
   const set1Rounds = tournament.rounds.slice(0, initialRoundsCount);
-  const allSet1RoundsCompleted = set1Rounds.every(r => r.matches.every(m => m.isCompleted));
+  const allSet1RoundsCompleted = set1Rounds.length > 0 && set1Rounds.every(r => r.matches.every(m => m.isCompleted));
 
   // Check if ALL rounds (including extended set 2) are completed
-  const allRoundsCompleted = tournament.rounds.every(r => r.matches.every(m => m.isCompleted));
+  const allRoundsCompleted = tournament.rounds.length > 0 && tournament.rounds.every(r => r.matches.every(m => m.isCompleted));
 
   // Find skipped (incomplete) rounds in set 1
   const getSkippedRoundsInSet1 = () => {
     return set1Rounds
+      .filter(r => !r.matches.every(m => m.isCompleted))
+      .map(r => r.roundNumber);
+  };
+
+  // Find skipped (incomplete) rounds in all rounds
+  const getSkippedRounds = () => {
+    return tournament.rounds
       .filter(r => !r.matches.every(m => m.isCompleted))
       .map(r => r.roundNumber);
   };
@@ -193,7 +200,7 @@ export default function TournamentDetailPage() {
   const isLastRoundInputted = lastRoundData?.matches.every(m => m.isCompleted) ?? false;
 
   // Check if last round of set 1 is inputted
-  const lastSet1RoundData = set1Rounds[set1Rounds.length - 1];
+  const lastSet1RoundData = set1Rounds.length > 0 ? set1Rounds[set1Rounds.length - 1] : undefined;
   const isLastSet1RoundInputted = lastSet1RoundData?.matches.every(m => m.isCompleted) ?? false;
 
   // Determine banner type to show
@@ -203,18 +210,27 @@ export default function TournamentDetailPage() {
       return "completeTournament";
     }
 
-    // Set 2 exists and last round is inputted - show end game banner
-    if (tournament.hasExtended && isLastRoundInputted) {
-      return "endGame";
+    // Set 2 exists
+    if (tournament.hasExtended) {
+      // All rounds completed - show end game banner
+      if (allRoundsCompleted) {
+        return "endGame";
+      }
+      // Last round is inputted but there are skipped rounds - show warning banner
+      if (isLastRoundInputted && !allRoundsCompleted) {
+        return "warning";
+      }
+      return null;
     }
 
-    // Set 1 is complete (all rounds) and not extended yet - show add round banner
-    if (allSet1RoundsCompleted && !tournament.hasExtended) {
+    // Set 1 only (not extended yet)
+    // Set 1 is complete (all rounds) - show add round banner
+    if (allSet1RoundsCompleted) {
       return "addRound";
     }
 
     // Last round of set 1 is inputted but there are skipped rounds - show warning banner
-    if (isLastSet1RoundInputted && !allSet1RoundsCompleted && !tournament.hasExtended) {
+    if (isLastSet1RoundInputted && !allSet1RoundsCompleted) {
       return "warning";
     }
 
@@ -222,7 +238,7 @@ export default function TournamentDetailPage() {
   };
 
   const bannerType = getBannerType();
-  const skippedRoundsInSet1 = getSkippedRoundsInSet1();
+  const skippedRounds = tournament.hasExtended ? getSkippedRounds() : getSkippedRoundsInSet1();
 
   // Handle extending tournament with more rounds
   const handleAddMoreRounds = () => {
@@ -267,7 +283,7 @@ export default function TournamentDetailPage() {
           {bannerType && (
             <TournamentBanner
               type={bannerType}
-              skippedRoundsCount={skippedRoundsInSet1.length}
+              skippedRoundsCount={skippedRounds.length}
               onViewClick={() => setIsSkippedRoundsModalOpen(true)}
               onAddRoundClick={handleAddMoreRounds}
               onEndGameClick={handleEndGame}
@@ -281,13 +297,13 @@ export default function TournamentDetailPage() {
               type="button"
               onClick={handlePreviousRound}
               disabled={currentRound === 1}
-              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:bg-neutral-200"
+              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-0 active:bg-neutral-200"
             >
               <ArrowLeftIcon size={20} className="text-clx-text-secondary" />
             </button>
 
             {/* Round indicator */}
-            <div className="flex items-center gap-2 px-5 py-1.5 border border-clx-border-textfield rounded-lg bg-white">
+            <div className="flex items-center gap-2 pl-5 pr-3 py-2 border border-clx-border-textfield rounded-full bg-white">
               <span className="text-sm font-bold text-clx-text-default">
                 Round {currentRound}
               </span>
@@ -303,7 +319,7 @@ export default function TournamentDetailPage() {
               type="button"
               onClick={handleNextRound}
               disabled={currentRound === totalRounds}
-              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-30 disabled:cursor-not-allowed active:bg-neutral-200"
+              className="p-2 border border-clx-border-textfield rounded-lg disabled:opacity-0 active:bg-neutral-200"
             >
               <ArrowRightIcon size={20} className="text-clx-text-secondary" />
             </button>
@@ -366,11 +382,13 @@ export default function TournamentDetailPage() {
           <DialogHeader>
             <DialogTitle>Complete All Rounds</DialogTitle>
             <DialogDescription>
-              You need to complete all rounds before adding more rounds. The following rounds are incomplete:
+              {tournament.hasExtended
+                ? "You need to complete all rounds before ending the game. The following rounds are incomplete:"
+                : "You need to complete all rounds before adding more rounds. The following rounds are incomplete:"}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-wrap gap-2 py-2">
-            {skippedRoundsInSet1.map((roundNumber: number) => (
+            {skippedRounds.map((roundNumber: number) => (
               <Button
                 key={roundNumber}
                 variant="outline"

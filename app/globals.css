@@ -26,7 +26,7 @@
   --color-neutral-dark100: #252423;
   --color-neutral-white: oklch(1 0 0); /*#ffffff;*/
   --color-neutral-background: #f6f5f5;
-  --color-neutral-form-border: #cccccc;
+  --color-neutral-form-border: oklch(0.8874 0 78.08); /*#dadada;*/
   --color-neutral-gray-75: oklch(0.9463 0.0062 75.41);
 
 
@@ -60,7 +60,7 @@
   --color-yellow-100: #ffec99;
   --color-yellow-300: #ffd933;
   --color-yellow-500: #ffce00;
-  --color-yellow-700: #e5a000;
+  --color-yellow-700: oklch(0.6639 0.157182 77.7502); /*#db9600;*/
 
   /* Green */
   --color-green-25: #f7fdfa;

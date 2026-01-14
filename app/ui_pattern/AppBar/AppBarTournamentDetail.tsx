@@ -35,11 +35,14 @@ export default function AppBarTournamentDetail({
   const pointLabel = tournament.pointType === "21" ? "21 points" :
                      tournament.pointType === "16" ? "16 points" :
                      tournament.pointType === "best4" ? "Best of 4" : "Best of 5";
+  const teamTypeLabel = tournament.teamType === "standard" ? "Americano" :
+                     tournament.teamType === "mix" ? "Mix Americano" :
+                     tournament.teamType === "team" ? "Team Americano" : "Mexicano";
 
   return (
-    <nav className="w-full bg-white border-b border-clx-border-default">
+    <nav className="w-full bg-white border-b border-clx-border-default sticky top-0 z-50 bg-white">
       {/* Back button */}
-      <div className="flex flex-col gap-4 px-4 pt-4 pb-2">
+      <div className="flex flex-col gap-4 px-4 pt-2 pb-2">
 
 
         {/* Tournament info */}
@@ -60,14 +63,14 @@ export default function AppBarTournamentDetail({
               {tournament.name}
             </h2>
             <p className="text-xs text-clx-text-secondary">
-              {tournament.players.length} players, {pointLabel}
+            {teamTypeLabel}, {tournament.players.length} Players, {pointLabel}
             </p>
           </div>
           <button
             type="button"
-            className="shrink-0 p-2 border border-clx-border-textfield rounded-lg"
+            className="shrink-0 p-2 rounded-lg"
           >
-            <DotsThreeOutlineVerticalIcon size={20} weight="fill" className="text-clx-icon-dark" />
+            <DotsThreeOutlineVerticalIcon size={20} weight="fill" className="text-clx-icon-default" />
           </button>
         </div>
       </div>

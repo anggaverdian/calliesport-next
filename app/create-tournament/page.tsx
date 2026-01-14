@@ -55,6 +55,7 @@ export default function CreateTournament() {
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [playerInput, setPlayerInput] = useState("");
+  const [playerInputError, setPlayerInputError] = useState("");
 
   const {
     control,
@@ -100,6 +101,25 @@ export default function CreateTournament() {
       .filter((name) => name.length > 0);
 
     if (newPlayers.length > 0) {
+      // Check for duplicates within the new input
+      const lowerCaseNewPlayers = newPlayers.map(name => name.toLowerCase());
+      const uniqueNewPlayers = new Set(lowerCaseNewPlayers);
+      if (uniqueNewPlayers.size !== newPlayers.length) {
+        setPlayerInputError("Duplicate names found in input. Each player must have a unique name.");
+        return;
+      }
+
+      // Check for duplicates with existing players
+      const existingLowerCase = players.map(name => name.toLowerCase());
+      const duplicates = newPlayers.filter(name => existingLowerCase.includes(name.toLowerCase()));
+      if (duplicates.length > 0) {
+        setPlayerInputError(`Player "${duplicates[0]}" already exists. Each player must have a unique name.`);
+        return;
+      }
+
+      // Clear error if validation passes
+      setPlayerInputError("");
+
       const totalPlayers = players.length + newPlayers.length;
 
       // Check if adding these players would exceed max limit
@@ -134,8 +154,16 @@ export default function CreateTournament() {
     const playerName = players[index];
     const newName = prompt("Edit player name:", playerName);
     if (newName && newName.trim() !== "") {
+      const trimmedName = newName.trim();
+      // Check if the new name already exists (excluding the current player)
+      const otherPlayers = players.filter((_, i) => i !== index);
+      const isDuplicate = otherPlayers.some(p => p.toLowerCase() === trimmedName.toLowerCase());
+      if (isDuplicate) {
+        toast.error(`Player "${trimmedName}" already exists. Each player must have a unique name.`);
+        return;
+      }
       const updatedPlayers = [...players];
-      updatedPlayers[index] = newName.trim();
+      updatedPlayers[index] = trimmedName;
       setValue("players", updatedPlayers, { shouldValidate: true });
       toast.success("Player name updated");
     }
@@ -310,7 +338,7 @@ export default function CreateTournament() {
                           </div>
                         </DrawerHeader>
 
-                        <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24">
                           {/* Input section */}
                           <div className="space-y-3">
                             <div className="space-y-1">
@@ -319,10 +347,16 @@ export default function CreateTournament() {
                               </Label>
                               <Textarea
                                 placeholder="e.g callie, mayo, eckel, jojo"
-                                className="h-20 text-base border-clx-border-textfield resize-none"
+                                className={`h-20 text-base resize-none ${playerInputError ? "border-clx-border-danger" : "border-clx-border-textfield"}`}
                                 value={playerInput}
-                                onChange={(e) => setPlayerInput(e.target.value)}
+                                onChange={(e) => {
+                                  setPlayerInput(e.target.value);
+                                  if (playerInputError) setPlayerInputError("");
+                                }}
                               />
+                              {playerInputError && (
+                                <p className="text-sm text-clx-text-danger">{playerInputError}</p>
+                              )}
                             </div>
                             <div className="flex items-center justify-between gap-4">
                               <p className="text-sm text-clx-text-default">
@@ -331,8 +365,9 @@ export default function CreateTournament() {
                               <Button
                                 type="button"
                                 variant="outline"
-                                className="h-10 px-4 border-clx-border-textfield rounded-lg gap-2 shrink-0"
+                                className="h-10 px-4 border-clx-border-textfield rounded-lg gap-2 shrink-0 disabled:opacity-50"
                                 onClick={handleAddPlayers}
+                                disabled={!playerInput.trim()}
                               >
                                 <PlusIcon size={24} className="text-clx-text-default" />
                                 <span className="font-bold text-clx-text-default">Add</span>
