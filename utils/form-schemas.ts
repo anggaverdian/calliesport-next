@@ -14,3 +14,63 @@ export const createTournamentSchema = z.object({
 });
 
 export type CreateTournamentFormData = z.infer<typeof createTournamentSchema>;
+
+// ============================================================================
+// LOCALSTORAGE VALIDATION SCHEMAS
+// Used to validate data integrity when reading from localStorage
+// ============================================================================
+
+const MatchSchema = z.object({
+  id: z.string(),
+  teamA: z.array(z.string()),
+  teamB: z.array(z.string()),
+  scoreA: z.number(),
+  scoreB: z.number(),
+  isCompleted: z.boolean(),
+});
+
+const RoundSchema = z.object({
+  roundNumber: z.number(),
+  matches: z.array(MatchSchema),
+  restingPlayers: z.array(z.string()),
+});
+
+const TournamentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  teamType: z.enum(["standard", "mix", "team", "mexicano"]),
+  pointType: z.string(),
+  players: z.array(z.string()),
+  rounds: z.array(RoundSchema),
+  createdAt: z.string(),
+  hasExtended: z.boolean().optional(),
+  isEnded: z.boolean().optional(),
+});
+
+export const TournamentsArraySchema = z.array(TournamentSchema);
+
+export type ValidatedTournament = z.infer<typeof TournamentSchema>;
+
+// ============================================================================
+// INPUT SANITIZATION
+// Prevents XSS by removing potentially dangerous characters from user input
+// ============================================================================
+
+/**
+ * Sanitizes a string by removing HTML tags and dangerous characters.
+ * Used to clean user input before storing or rendering.
+ */
+export function sanitizeString(input: string): string {
+  return input
+    .replace(/[<>]/g, "") // Remove angle brackets (prevents HTML injection)
+    .replace(/javascript:/gi, "") // Remove javascript: protocol
+    .replace(/on\w+=/gi, "") // Remove event handlers like onclick=, onerror=
+    .trim();
+}
+
+/**
+ * Sanitizes an array of strings (e.g., player names).
+ */
+export function sanitizeStringArray(inputs: string[]): string[] {
+  return inputs.map(sanitizeString);
+}

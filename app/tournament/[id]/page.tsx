@@ -25,6 +25,8 @@ import {
   extendTournament,
   endTournament,
   calculateRounds,
+  isTeamTypeSupported,
+  teamTypeNames,
 } from "@/utils/tournament";
 import { toast } from "sonner";
 
@@ -83,6 +85,36 @@ export default function TournamentDetailPage() {
       <main className="w-auto min-h-screen bg-white">
         <div className="flex items-center justify-center h-screen">
           <p className="text-clx-text-secondary">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Show "under development" message for unsupported team types
+  if (!isTeamTypeSupported(tournament.teamType)) {
+    return (
+      <main className="w-auto min-h-screen bg-white flex flex-col">
+        <AppBarTournamentDetail
+          tournament={tournament}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-clx-bg-neutral-bold rounded-xl p-8 max-w-md">
+            <h2 className="text-xl font-semibold text-clx-text-default mb-3">
+              Coming Soon
+            </h2>
+            <p className="text-clx-text-secondary mb-4">
+              {teamTypeNames[tournament.teamType]} is currently under development.
+              Right now, you can only use <span className="font-medium">Standard Americano</span> for tournaments.
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => router.push("/")}
+            >
+              Back to Home
+            </Button>
+          </div>
         </div>
       </main>
     );

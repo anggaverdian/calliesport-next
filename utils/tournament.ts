@@ -1,6 +1,16 @@
 // Tournament types and utilities
+import { TournamentsArraySchema, sanitizeString, sanitizeStringArray } from "./form-schemas";
+
+// ============================================================================
+// SHARED TYPES AND INTERFACES
+// ============================================================================
 
 export type TeamType = "standard" | "mix" | "team" | "mexicano";
+
+// Check if a team type is currently supported (has full implementation)
+export function isTeamTypeSupported(teamType: TeamType): boolean {
+  return teamType === "standard";
+}
 
 export interface Tournament {
   id: string;
@@ -41,7 +51,56 @@ export const teamTypeNames: Record<TeamType, string> = {
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 12;
 
-// Calculate total rounds based on player count
+// ============================================================================
+// SHARED UTILITY FUNCTIONS
+// ============================================================================
+
+// Local storage key
+const STORAGE_KEY = "calliesport_tournaments";
+
+// Generate unique ID
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
+// Get max score based on point type
+export function getMaxScore(pointType: string): number {
+  switch (pointType) {
+    case "21":
+      return 21;
+    case "16":
+      return 16;
+    case "best4":
+      return 4;
+    case "best5":
+      return 5;
+    default:
+      return 21;
+  }
+}
+
+// Get point type display label
+export function getPointTypeLabel(pointType: string): string {
+  switch (pointType) {
+    case "21":
+      return "21 points";
+    case "16":
+      return "16 points";
+    case "best4":
+      return "Best of 4";
+    case "best5":
+      return "Best of 5";
+    default:
+      return pointType;
+  }
+}
+
+// ============================================================================
+// STANDARD AMERICANO - ROUND GENERATION
+// These functions are specific to Standard Americano team type
+// ============================================================================
+
+// Calculate total rounds based on player count (Standard Americano)
 export function calculateRounds(playerCount: number): number {
   const roundsMap: Record<number, number> = {
     4: 6,
@@ -71,30 +130,6 @@ export function calculateExtendedRounds(playerCount: number): number {
     12: 9,  // Total: 42 (Special Case)
   };
   return extendedRoundsMap[playerCount] || 0;
-}
-
-// Get max score based on point type
-export function getMaxScore(pointType: string): number {
-  switch (pointType) {
-    case "21":
-      return 21;
-    case "16":
-      return 16;
-    case "best4":
-      return 4;
-    case "best5":
-      return 5;
-    default:
-      return 21;
-  }
-}
-
-// Local storage key
-const STORAGE_KEY = "calliesport_tournaments";
-
-// Generate unique ID
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
 // Generate all possible pairings (for Americano/Round Robin)
@@ -323,11 +358,29 @@ export function generateTournamentRounds(players: string[]): Round[] {
   return rounds;
 }
 
-// Get all tournaments from localStorage
+// Get all tournaments from localStorage with safe parsing and validation
 export function getTournaments(): Tournament[] {
   if (typeof window === "undefined") return [];
+
   const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
+  if (!stored) return [];
+
+  try {
+    const parsed = JSON.parse(stored);
+    const result = TournamentsArraySchema.safeParse(parsed);
+
+    if (result.success) {
+      return result.data as Tournament[];
+    }
+
+    // Data is corrupted or invalid - log error and return empty array
+    console.error("Invalid tournament data in localStorage:", result.error.message);
+    return [];
+  } catch (error) {
+    // JSON parsing failed - data is corrupted
+    console.error("Failed to parse tournaments from localStorage:", error);
+    return [];
+  }
 }
 
 // Get tournament by ID
@@ -336,13 +389,28 @@ export function getTournamentById(id: string): Tournament | null {
   return tournaments.find(t => t.id === id) || null;
 }
 
+// ============================================================================
+// TOURNAMENT CRUD OPERATIONS
+// ============================================================================
+
 // Save a new tournament
 export function saveTournament(tournament: Omit<Tournament, "id" | "createdAt" | "rounds">): Tournament {
   const tournaments = getTournaments();
-  const rounds = generateTournamentRounds(tournament.players);
+
+  // Sanitize user input to prevent XSS
+  const sanitizedName = sanitizeString(tournament.name);
+  const sanitizedPlayers = sanitizeStringArray(tournament.players);
+
+  // Only generate rounds for Standard Americano (currently supported)
+  // Other team types will have empty rounds until their logic is implemented
+  const rounds = isTeamTypeSupported(tournament.teamType)
+    ? generateTournamentRounds(sanitizedPlayers)
+    : [];
 
   const newTournament: Tournament = {
     ...tournament,
+    name: sanitizedName,
+    players: sanitizedPlayers,
     id: generateId(),
     rounds,
     createdAt: new Date().toISOString(),
@@ -612,20 +680,4 @@ export function endTournament(tournamentId: string): Tournament | null {
   tournament.isEnded = true;
   updateTournament(tournament);
   return tournament;
-}
-
-// Get point type display label
-export function getPointTypeLabel(pointType: string): string {
-  switch (pointType) {
-    case "21":
-      return "21 points";
-    case "16":
-      return "16 points";
-    case "best4":
-      return "Best of 4";
-    case "best5":
-      return "Best of 5";
-    default:
-      return pointType;
-  }
 }
