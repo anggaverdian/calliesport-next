@@ -27,7 +27,7 @@ interface TournamentItemProps {
   tournament: Tournament;
   onView: (id: string) => void;
   onDelete: (id: string) => void;
-}
+};
 
 export default function TournamentItem({ tournament, onView, onDelete }: TournamentItemProps) {
   const rounds = calculateRounds(tournament.players.length);

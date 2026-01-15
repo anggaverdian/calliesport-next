@@ -1,4 +1,5 @@
 // Tournament types and utilities
+import { match } from "assert";
 import { TournamentsArraySchema, sanitizeString, sanitizeStringArray } from "./form-schemas";
 
 // ============================================================================
@@ -132,73 +133,299 @@ export function calculateExtendedRounds(playerCount: number): number {
   return extendedRoundsMap[playerCount] || 0;
 }
 
-// Generate all possible pairings (for Americano/Round Robin)
-function generateAllPairings(players: string[]): [string, string][] {
-  const pairings: [string, string][] = [];
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      pairings.push([players[i], players[j]]);
-    }
-  }
-  return pairings;
+// ============================================================================
+// ROUND ROBIN ROTATION ALGORITHM
+// Uses deterministic rotation to ensure every player partners with and
+// plays against every other player. No subgroups are formed.
+// ============================================================================
+
+// Generate a unique key for a player pair (order-independent)
+function getPairKey(player1: string, player2: string): string {
+  return [player1, player2].sort().join("+");
 }
 
-// Generate all possible matches (team vs team)
-function generateAllMatches(players: string[]): Match[] {
-  const pairings = generateAllPairings(players);
-  const matches: Match[] = [];
+// Shuffle array randomly (Fisher-Yates algorithm)
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  console.log("input dari create : " + shuffled);
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const randomIndex = Math.floor(Math.random() * (i + 1));
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[randomIndex];
+    shuffled[randomIndex] = temp;
+  }
+  console.log("input sudah diacak : " + shuffled);
+  return shuffled;
+}
 
-  // Create matches from all valid team combinations
-  for (let i = 0; i < pairings.length; i++) {
-    for (let j = i + 1; j < pairings.length; j++) {
-      const teamA = pairings[i];
-      const teamB = pairings[j];
+// Match template interface
+interface MatchTemplate {
+  teamA: [string, string];
+  teamB: [string, string];
+}
 
-      // Ensure no player is on both teams
-      const allPlayers = [...teamA, ...teamB];
-      const uniquePlayers = new Set(allPlayers);
+// Tracking state for balancing
+interface RoundRobinState {
+  playCount: Record<string, number>;
+  lastPlayedRound: Record<string, number>;
+  partnerCount: Record<string, number>;
+  opponentCount: Record<string, number>;
+}
 
-      if (uniquePlayers.size === 4) {
-        matches.push({
-          id: generateId(),
-          teamA: [...teamA],
-          teamB: [...teamB],
-          scoreA: 0,
-          scoreB: 0,
-          isCompleted: false,
-        });
+// Initialize tracking state
+function initializeState(players: string[]): RoundRobinState {
+  const state: RoundRobinState = {
+    playCount: {},
+    lastPlayedRound: {},
+    partnerCount: {},
+    opponentCount: {},
+  };
+
+  players.forEach(player => {
+    state.playCount[player] = 0;
+    state.lastPlayedRound[player] = -Infinity;
+  });
+
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      const key = getPairKey(players[i], players[j]);
+      state.partnerCount[key] = 0;
+      state.opponentCount[key] = 0;
+    }
+  }
+  return state;
+}
+
+// Update state after a match
+function updateState(
+  state: RoundRobinState,
+  match: MatchTemplate,
+  roundIndex: number
+): void {
+  const { teamA, teamB } = match;
+
+  [...teamA, ...teamB].forEach(player => {
+    state.playCount[player]++;
+    state.lastPlayedRound[player] = roundIndex;
+  });
+
+  state.partnerCount[getPairKey(teamA[0], teamA[1])]++;
+  state.partnerCount[getPairKey(teamB[0], teamB[1])]++;
+
+  state.opponentCount[getPairKey(teamA[0], teamB[0])]++;
+  state.opponentCount[getPairKey(teamA[0], teamB[1])]++;
+  state.opponentCount[getPairKey(teamA[1], teamB[0])]++;
+  state.opponentCount[getPairKey(teamA[1], teamB[1])]++;
+}
+
+// ============================================================================
+// ROTATION-BASED ROUND GENERATION
+// Uses cross-pairing strategy: when play counts are balanced, previous
+// partners become opponents in next round. This ensures maximum mixing.
+// ============================================================================
+
+// Check if all play counts are balanced (all equal or differ by at most 1)
+function isPlayCountBalanced(state: RoundRobinState, players: string[]): boolean {
+  const counts = players.map(p => state.playCount[p]);
+  const min = Math.min(...counts);
+  const max = Math.max(...counts);
+  return max - min <= 1;
+}
+
+// Get previous match for cross-pairing reference
+function getPreviousMatch(matches: Match[]): Match | null {
+  return matches.length > 0 ? matches[matches.length - 1] : null;
+}
+
+// Generate all possible 4-player selections from player list
+function generatePlayerSelections(players: string[]): string[][] {
+  const n = players.length;
+  const selections: string[][] = [];
+
+  // Generate all combinations of 4 players
+  for (let i = 0; i < n - 3; i++) {
+    for (let j = i + 1; j < n - 2; j++) {
+      for (let k = j + 1; k < n - 1; k++) {
+        for (let l = k + 1; l < n; l++) {
+          selections.push([players[i], players[j], players[k], players[l]]);
+        }
       }
     }
+  }
+
+  return selections;
+}
+
+// Score a pairing based on partner/opponent balance and cross-pairing
+function scorePairing(
+  pairing: MatchTemplate,
+  state: RoundRobinState,
+  previousMatch: Match | null
+): number {
+  const { teamA, teamB } = pairing;
+  let score = 0;
+
+  // Partner balance: prefer new partnerships
+  const partnerScoreA = state.partnerCount[getPairKey(teamA[0], teamA[1])];
+  const partnerScoreB = state.partnerCount[getPairKey(teamB[0], teamB[1])];
+  score += (partnerScoreA + partnerScoreB) * 10000;
+
+  // Opponent balance: prefer new opponents
+  const opponentScore =
+    state.opponentCount[getPairKey(teamA[0], teamB[0])] +
+    state.opponentCount[getPairKey(teamA[0], teamB[1])] +
+    state.opponentCount[getPairKey(teamA[1], teamB[0])] +
+    state.opponentCount[getPairKey(teamA[1], teamB[1])];
+  score += opponentScore * 100;
+
+  // Cross-pairing bonus: if previous partners are now opponents, reduce score
+  if (previousMatch) {
+    const prevTeamA = previousMatch.teamA;
+    const prevTeamB = previousMatch.teamB;
+
+    // Check if any previous partnership is now an opposition
+    const allPlayers = [...teamA, ...teamB];
+    const prevPlayers = [...prevTeamA, ...prevTeamB];
+
+    // If same 4 players, check for cross-pairing
+    const sameGroup =
+      allPlayers.every(p => prevPlayers.includes(p)) &&
+      prevPlayers.every(p => allPlayers.includes(p));
+
+    if (sameGroup) {
+      // Previous partners should now be opponents (cross-pairing)
+      const prevPartnerKeyA = getPairKey(prevTeamA[0], prevTeamA[1]);
+      const prevPartnerKeyB = getPairKey(prevTeamB[0], prevTeamB[1]);
+
+      // Check if previous teamA partners are now opponents
+      const teamAOpponentsKeys = [
+        getPairKey(teamA[0], teamB[0]),
+        getPairKey(teamA[0], teamB[1]),
+        getPairKey(teamA[1], teamB[0]),
+        getPairKey(teamA[1], teamB[1]),
+      ];
+
+      // Bonus for cross-pairing (previous partners are now opponents)
+      if (teamAOpponentsKeys.includes(prevPartnerKeyA)) {
+        score -= 5000; // Bonus for cross-pairing
+      }
+      if (teamAOpponentsKeys.includes(prevPartnerKeyB)) {
+        score -= 5000; // Bonus for cross-pairing
+      }
+    }
+  }
+  return score;
+}
+
+// Generate matches using balanced rotation with cross-pairing
+function generateRotationMatches(
+  players: string[],
+  numRounds: number,
+  state: RoundRobinState,
+  startRoundIndex: number = 0
+): Match[] {
+  const matches: Match[] = [];
+
+  for (let round = 0; round < numRounds; round++) {
+    const roundIndex = startRoundIndex + round;
+    const previousMatch = getPreviousMatch(matches);
+
+    // Check if play counts are balanced
+    const balanced = isPlayCountBalanced(state, players);
+
+    let selectedPlayers: string[];
+
+    if (balanced && previousMatch) {
+      // Play counts balanced: apply cross-pairing with same or rotated players
+      // First, try to use players who haven't partnered/opposed each other yet
+      const allSelections = generatePlayerSelections(players);
+
+      // Score each selection
+      let bestSelection = allSelections[0];
+      let bestSelectionScore = Infinity;
+
+      for (const selection of allSelections) {
+        // Calculate how many new partnerships/opponents this selection enables
+        let selectionScore = 0;
+
+        // Prefer selections that maximize new partnership opportunities
+        for (let i = 0; i < selection.length; i++) {
+          for (let j = i + 1; j < selection.length; j++) {
+            const key = getPairKey(selection[i], selection[j]);
+            // Lower partner + opponent count = better
+            selectionScore += state.partnerCount[key] * 100;
+            selectionScore += state.opponentCount[key] * 10;
+          }
+        }
+
+        // Balance play counts (slight penalty for high play count players)
+        for (const player of selection) {
+          selectionScore += state.playCount[player] * 1000;
+        }
+
+        if (selectionScore < bestSelectionScore) {
+          bestSelectionScore = selectionScore;
+          bestSelection = selection;
+        }
+      }
+
+      selectedPlayers = bestSelection;
+    } else {
+      // Play counts NOT balanced: prioritize lowest play count players
+      const playersByPlayCount = [...players].sort((a, b) => {
+        const playDiff = state.playCount[a] - state.playCount[b];
+        if (playDiff !== 0) return playDiff;
+
+        // Tiebreaker: longest rest time
+        const restA = roundIndex - state.lastPlayedRound[a];
+        const restB = roundIndex - state.lastPlayedRound[b];
+        return restB - restA;
+      });
+
+      selectedPlayers = playersByPlayCount.slice(0, 4);
+    }
+
+    // Generate all 3 possible pairings for selected 4 players
+    const [p1, p2, p3, p4] = selectedPlayers;
+    const possiblePairings: MatchTemplate[] = [
+      { teamA: [p1, p2], teamB: [p3, p4] },
+      { teamA: [p1, p3], teamB: [p2, p4] },
+      { teamA: [p1, p4], teamB: [p2, p3] },
+    ];
+
+    // Score each pairing and pick the best
+    let bestPairing = possiblePairings[0];
+    let bestScore = Infinity;
+
+    for (const pairing of possiblePairings) {
+      const score = scorePairing(pairing, state, previousMatch);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestPairing = pairing;
+      }
+    }
+
+    // Create the match
+    const match: Match = {
+      id: generateId(),
+      teamA: [...bestPairing.teamA],
+      teamB: [...bestPairing.teamB],
+      scoreA: 0,
+      scoreB: 0,
+      isCompleted: false,
+    };
+
+    matches.push(match);
+
+    // Update state
+    updateState(state, bestPairing, roundIndex);
   }
 
   return matches;
 }
 
-// Generate a unique key for a team pairing (order-independent)
-function getTeamKey(team: string[]): string {
-  return [...team].sort().join("+");
-}
-
-// Shuffle array randomly (Fisher-Yates algorithm)
-function shuffleArray<T>(array: T[]): T[] {
-  // Create a copy so we don't modify the original array
-  const shuffled = [...array];
-
-  // Loop from the last element to the second element
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    // Pick a random index from 0 to i
-    const randomIndex = Math.floor(Math.random() * (i + 1));
-
-    // Swap the current element with the random element
-    const temp = shuffled[i];
-    shuffled[i] = shuffled[randomIndex];
-    shuffled[randomIndex] = temp;
-  }
-
-  return shuffled;
-}
-
-// Generate tournament rounds with balanced pairing and fair rest times
+// Generate tournament rounds with balanced pairing using Round Robin Rotation
 export function generateTournamentRounds(players: string[]): Round[] {
   const totalRounds = calculateRounds(players.length);
 
@@ -206,139 +433,19 @@ export function generateTournamentRounds(players: string[]): Round[] {
     return [];
   }
 
-  // Shuffle players randomly so round 1 is not always the same
+  // Shuffle players for randomized initial order
   const shuffledPlayers = shuffleArray(players);
 
-  // Generate all possible unique matches as templates (using shuffled players)
-  const allMatchTemplates = generateAllMatches(shuffledPlayers);
+  // Initialize tracking state
+  const state = initializeState(shuffledPlayers);
 
-  // Track play count and last played round for each player
-  const playCount: Record<string, number> = {};
-  const lastPlayedRound: Record<string, number> = {};
-  // Track when each team pairing last played together
-  const teamLastPlayed: Record<string, number> = {};
-
-  // Initialize tracking (using shuffled players)
-  shuffledPlayers.forEach(player => {
-    playCount[player] = 0;
-    lastPlayedRound[player] = -Infinity; // Never played
-  });
-
-  const selectedMatches: Match[] = [];
-
-  // Available match pool - copy of templates, will be refilled when exhausted
-  let availableMatches = [...allMatchTemplates];
-
-  // Select matches one by one for fair rest time ordering
-  for (let roundIndex = 0; roundIndex < totalRounds; roundIndex++) {
-    // If pool is empty, refill it
-    if (availableMatches.length === 0) {
-      availableMatches = [...allMatchTemplates];
-    }
-
-    // Find the best match from available pool
-    let bestMatchIndex = -1;
-    let bestScore = Infinity;
-
-    for (let i = 0; i < availableMatches.length; i++) {
-      const match = availableMatches[i];
-      const matchPlayers = [...match.teamA, ...match.teamB];
-
-      // Check team pairing rest (avoid same team playing consecutively)
-      const teamAKey = getTeamKey(match.teamA);
-      const teamBKey = getTeamKey(match.teamB);
-      const teamALastPlayed = teamLastPlayed[teamAKey] ?? -Infinity;
-      const teamBLastPlayed = teamLastPlayed[teamBKey] ?? -Infinity;
-      const minTeamRest = Math.min(
-        roundIndex - teamALastPlayed,
-        roundIndex - teamBLastPlayed
-      );
-
-      // Skip if either team just played in the previous round
-      if (minTeamRest <= 1 && roundIndex > 0) {
-        continue;
-      }
-
-      // Calculate player rest time (minimum among all 4 players)
-      let minPlayerRest = Infinity;
-      let totalPlayCount = 0;
-
-      for (const player of matchPlayers) {
-        totalPlayCount += playCount[player];
-        const restTime = roundIndex - lastPlayedRound[player];
-        if (restTime < minPlayerRest) {
-          minPlayerRest = restTime;
-        }
-      }
-
-      // Score formula:
-      // 1. Primary: prioritize players with lowest total play count
-      // 2. Secondary: prioritize matches where players have rested more (negative = better)
-      const score = totalPlayCount * 100 - minPlayerRest;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestMatchIndex = i;
-      }
-    }
-
-    // If no valid match found (all teams just played), relax the constraint
-    if (bestMatchIndex === -1) {
-      bestScore = Infinity;
-      for (let i = 0; i < availableMatches.length; i++) {
-        const match = availableMatches[i];
-        const matchPlayers = [...match.teamA, ...match.teamB];
-
-        let minPlayerRest = Infinity;
-        let totalPlayCount = 0;
-
-        for (const player of matchPlayers) {
-          totalPlayCount += playCount[player];
-          const restTime = roundIndex - lastPlayedRound[player];
-          if (restTime < minPlayerRest) {
-            minPlayerRest = restTime;
-          }
-        }
-
-        const score = totalPlayCount * 100 - minPlayerRest;
-
-        if (score < bestScore) {
-          bestScore = score;
-          bestMatchIndex = i;
-        }
-      }
-    }
-
-    if (bestMatchIndex !== -1) {
-      const bestMatch = availableMatches[bestMatchIndex];
-
-      // Remove selected match from available pool
-      availableMatches.splice(bestMatchIndex, 1);
-
-      // Add the selected match with new ID
-      selectedMatches.push({
-        id: generateId(),
-        teamA: [...bestMatch.teamA],
-        teamB: [...bestMatch.teamB],
-        scoreA: 0,
-        scoreB: 0,
-        isCompleted: false,
-      });
-
-      // Update tracking for players in this match
-      const matchPlayers = [...bestMatch.teamA, ...bestMatch.teamB];
-      for (const player of matchPlayers) {
-        playCount[player]++;
-        lastPlayedRound[player] = roundIndex;
-      }
-
-      // Update team pairing tracking
-      const teamAKey = getTeamKey(bestMatch.teamA);
-      const teamBKey = getTeamKey(bestMatch.teamB);
-      teamLastPlayed[teamAKey] = roundIndex;
-      teamLastPlayed[teamBKey] = roundIndex;
-    }
-  }
+  // Generate matches using Rotation algorithm
+  const selectedMatches = generateRotationMatches(
+    shuffledPlayers,
+    totalRounds,
+    state,
+    0
+  );
 
   // Create rounds (1 match per round)
   const rounds: Round[] = [];
@@ -371,24 +478,24 @@ export function generateTournamentRoundsWithFirstMatch(
     return [];
   }
 
-  // Generate all possible unique matches as templates
-  const allMatchTemplates = generateAllMatches(players);
+  // Reorder players array so that:
+  // 1. First 4 players are the selected first match players (teamA[0], teamA[1], teamB[0], teamB[1])
+  // 2. Remaining players are randomized
+  // This ensures the algorithm generates balanced rounds based on this player order
+  // (same as how generateTournamentRounds shuffles players before generating rounds)
+  const firstMatchPlayers = [...teamA, ...teamB];
+  const remainingPlayers = players.filter(p => !firstMatchPlayers.includes(p));
 
-  // Track play count and last played round for each player
-  const playCount: Record<string, number> = {};
-  const lastPlayedRound: Record<string, number> = {};
-  // Track when each team pairing last played together
-  const teamLastPlayed: Record<string, number> = {};
+  // Shuffle the remaining players for randomization
+  const shuffledRemainingPlayers = shuffleArray(remainingPlayers);
 
-  // Initialize tracking
-  players.forEach(player => {
-    playCount[player] = 0;
-    lastPlayedRound[player] = -Infinity;
-  });
+  // Combine: first match players + shuffled remaining players
+  const orderedPlayers = [...firstMatchPlayers, ...shuffledRemainingPlayers];
 
-  const selectedMatches: Match[] = [];
+  // Initialize tracking state with ordered players
+  const state = initializeState(orderedPlayers);
 
-  // Create the first match with the user-specified teams
+  // Create the first match with the user-specified teams (exact pairing)
   const firstMatch: Match = {
     id: generateId(),
     teamA: [...teamA],
@@ -397,158 +504,28 @@ export function generateTournamentRoundsWithFirstMatch(
     scoreB: 0,
     isCompleted: false,
   };
-  selectedMatches.push(firstMatch);
 
-  // Update tracking for first match
-  const firstMatchPlayers = [...teamA, ...teamB];
-  for (const player of firstMatchPlayers) {
-    playCount[player]++;
-    lastPlayedRound[player] = 0;
-  }
-  const firstTeamAKey = getTeamKey(teamA);
-  const firstTeamBKey = getTeamKey(teamB);
-  teamLastPlayed[firstTeamAKey] = 0;
-  teamLastPlayed[firstTeamBKey] = 0;
+  // Update state for first match
+  const firstMatchTemplate: MatchTemplate = { teamA, teamB };
+  updateState(state, firstMatchTemplate, 0);
 
-  // Remove the first match from available pool if it exists
-  let availableMatches = allMatchTemplates.filter(m => {
-    const matchTeamAKey = getTeamKey(m.teamA);
-    const matchTeamBKey = getTeamKey(m.teamB);
-    // Check if this match is the same as the first match (regardless of team order)
-    const isSameMatch =
-      (matchTeamAKey === firstTeamAKey && matchTeamBKey === firstTeamBKey) ||
-      (matchTeamAKey === firstTeamBKey && matchTeamBKey === firstTeamAKey);
-    return !isSameMatch;
-  });
+  // Generate remaining matches using Rotation algorithm with ordered players
+  // Starting from round index 1 since first match is already created
+  const remainingMatches = generateRotationMatches(
+    orderedPlayers,
+    totalRounds - 1,
+    state,
+    1
+  );
 
-  // Select remaining matches
-  for (let roundIndex = 1; roundIndex < totalRounds; roundIndex++) {
-    // If pool is empty, refill it (excluding already selected matches)
-    if (availableMatches.length === 0) {
-      availableMatches = allMatchTemplates.filter(template => {
-        const templateTeamAKey = getTeamKey(template.teamA);
-        const templateTeamBKey = getTeamKey(template.teamB);
-        // Check if this template was already selected
-        return !selectedMatches.some(selected => {
-          const selectedTeamAKey = getTeamKey(selected.teamA);
-          const selectedTeamBKey = getTeamKey(selected.teamB);
-          return (templateTeamAKey === selectedTeamAKey && templateTeamBKey === selectedTeamBKey) ||
-                 (templateTeamAKey === selectedTeamBKey && templateTeamBKey === selectedTeamAKey);
-        });
-      });
-      // If still empty after filtering, use all templates
-      if (availableMatches.length === 0) {
-        availableMatches = [...allMatchTemplates];
-      }
-    }
-
-    // Find the best match from available pool
-    let bestMatchIndex = -1;
-    let bestScore = Infinity;
-
-    for (let i = 0; i < availableMatches.length; i++) {
-      const match = availableMatches[i];
-      const matchPlayers = [...match.teamA, ...match.teamB];
-
-      // Check team pairing rest (avoid same team playing consecutively)
-      const teamAKey = getTeamKey(match.teamA);
-      const teamBKey = getTeamKey(match.teamB);
-      const teamALastPlayed = teamLastPlayed[teamAKey] ?? -Infinity;
-      const teamBLastPlayed = teamLastPlayed[teamBKey] ?? -Infinity;
-      const minTeamRest = Math.min(
-        roundIndex - teamALastPlayed,
-        roundIndex - teamBLastPlayed
-      );
-
-      // Skip if either team just played in the previous round
-      if (minTeamRest <= 1 && roundIndex > 0) {
-        continue;
-      }
-
-      // Calculate player rest time (minimum among all 4 players)
-      let minPlayerRest = Infinity;
-      let totalPlayCount = 0;
-
-      for (const player of matchPlayers) {
-        totalPlayCount += playCount[player];
-        const restTime = roundIndex - lastPlayedRound[player];
-        if (restTime < minPlayerRest) {
-          minPlayerRest = restTime;
-        }
-      }
-
-      // Score formula
-      const score = totalPlayCount * 100 - minPlayerRest;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestMatchIndex = i;
-      }
-    }
-
-    // If no valid match found, relax the constraint
-    if (bestMatchIndex === -1) {
-      bestScore = Infinity;
-      for (let i = 0; i < availableMatches.length; i++) {
-        const match = availableMatches[i];
-        const matchPlayers = [...match.teamA, ...match.teamB];
-
-        let minPlayerRest = Infinity;
-        let totalPlayCount = 0;
-
-        for (const player of matchPlayers) {
-          totalPlayCount += playCount[player];
-          const restTime = roundIndex - lastPlayedRound[player];
-          if (restTime < minPlayerRest) {
-            minPlayerRest = restTime;
-          }
-        }
-
-        const score = totalPlayCount * 100 - minPlayerRest;
-
-        if (score < bestScore) {
-          bestScore = score;
-          bestMatchIndex = i;
-        }
-      }
-    }
-
-    if (bestMatchIndex !== -1) {
-      const bestMatch = availableMatches[bestMatchIndex];
-
-      // Remove selected match from available pool
-      availableMatches.splice(bestMatchIndex, 1);
-
-      // Add the selected match with new ID
-      selectedMatches.push({
-        id: generateId(),
-        teamA: [...bestMatch.teamA],
-        teamB: [...bestMatch.teamB],
-        scoreA: 0,
-        scoreB: 0,
-        isCompleted: false,
-      });
-
-      // Update tracking for players in this match
-      const matchPlayers = [...bestMatch.teamA, ...bestMatch.teamB];
-      for (const player of matchPlayers) {
-        playCount[player]++;
-        lastPlayedRound[player] = roundIndex;
-      }
-
-      // Update team pairing tracking
-      const teamAKey = getTeamKey(bestMatch.teamA);
-      const teamBKey = getTeamKey(bestMatch.teamB);
-      teamLastPlayed[teamAKey] = roundIndex;
-      teamLastPlayed[teamBKey] = roundIndex;
-    }
-  }
+  // Combine first match with remaining matches
+  const allMatches = [firstMatch, ...remainingMatches];
 
   // Create rounds (1 match per round)
   const rounds: Round[] = [];
 
-  for (let i = 0; i < selectedMatches.length; i++) {
-    const match = selectedMatches[i];
+  for (let i = 0; i < allMatches.length; i++) {
+    const match = allMatches[i];
     const playingPlayers = [...match.teamA, ...match.teamB];
     const restingPlayers = players.filter(p => !playingPlayers.includes(p));
 
@@ -739,149 +716,33 @@ function generateAdditionalRounds(
   existingRounds: Round[],
   additionalRoundsCount: number
 ): Round[] {
-  // Generate all possible unique matches as templates
-  const allMatchTemplates = generateAllMatches(players);
+  // Do NOT shuffle players when extending tournament
+  // The existing rounds already established the pairing history
+  // Shuffling would break the balance tracking
+  const orderedPlayers = [...players];
 
-  // Track play count from existing rounds
-  const playCount: Record<string, number> = {};
-  const lastPlayedRound: Record<string, number> = {};
-  const teamLastPlayed: Record<string, number> = {};
+  // Initialize state from existing rounds with ordered players
+  const state = initializeState(orderedPlayers);
 
-  // Initialize tracking
-  players.forEach(player => {
-    playCount[player] = 0;
-    lastPlayedRound[player] = -Infinity;
-  });
-
-  // Count plays from existing rounds
+  // Rebuild state from existing rounds
   existingRounds.forEach((round, roundIndex) => {
     round.matches.forEach(match => {
-      const matchPlayers = [...match.teamA, ...match.teamB];
-      matchPlayers.forEach(player => {
-        playCount[player]++;
-        lastPlayedRound[player] = roundIndex;
-      });
-
-      const teamAKey = getTeamKey(match.teamA);
-      const teamBKey = getTeamKey(match.teamB);
-      teamLastPlayed[teamAKey] = roundIndex;
-      teamLastPlayed[teamBKey] = roundIndex;
+      const template: MatchTemplate = {
+        teamA: match.teamA as [string, string],
+        teamB: match.teamB as [string, string],
+      };
+      updateState(state, template, roundIndex);
     });
   });
 
+  // Generate additional matches using Rotation algorithm with ordered players
   const startingRoundIndex = existingRounds.length;
-  const selectedMatches: Match[] = [];
-  let availableMatches = [...allMatchTemplates];
-
-  // Select matches one by one for fair rest time ordering
-  for (let i = 0; i < additionalRoundsCount; i++) {
-    const roundIndex = startingRoundIndex + i;
-
-    // If pool is empty, refill it
-    if (availableMatches.length === 0) {
-      availableMatches = [...allMatchTemplates];
-    }
-
-    // Find the best match from available pool
-    let bestMatchIndex = -1;
-    let bestScore = Infinity;
-
-    for (let j = 0; j < availableMatches.length; j++) {
-      const match = availableMatches[j];
-      const matchPlayers = [...match.teamA, ...match.teamB];
-
-      // Check team pairing rest
-      const teamAKey = getTeamKey(match.teamA);
-      const teamBKey = getTeamKey(match.teamB);
-      const teamALastPlayed = teamLastPlayed[teamAKey] ?? -Infinity;
-      const teamBLastPlayed = teamLastPlayed[teamBKey] ?? -Infinity;
-      const minTeamRest = Math.min(
-        roundIndex - teamALastPlayed,
-        roundIndex - teamBLastPlayed
-      );
-
-      // Skip if either team just played in the previous round
-      if (minTeamRest <= 1) {
-        continue;
-      }
-
-      // Calculate player rest time
-      let minPlayerRest = Infinity;
-      let totalPlayCount = 0;
-
-      for (const player of matchPlayers) {
-        totalPlayCount += playCount[player];
-        const restTime = roundIndex - lastPlayedRound[player];
-        if (restTime < minPlayerRest) {
-          minPlayerRest = restTime;
-        }
-      }
-
-      // Score formula: prioritize players with lowest play count, then rest time
-      const score = totalPlayCount * 100 - minPlayerRest;
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestMatchIndex = j;
-      }
-    }
-
-    // If no valid match found, relax the constraint
-    if (bestMatchIndex === -1) {
-      bestScore = Infinity;
-      for (let j = 0; j < availableMatches.length; j++) {
-        const match = availableMatches[j];
-        const matchPlayers = [...match.teamA, ...match.teamB];
-
-        let minPlayerRest = Infinity;
-        let totalPlayCount = 0;
-
-        for (const player of matchPlayers) {
-          totalPlayCount += playCount[player];
-          const restTime = roundIndex - lastPlayedRound[player];
-          if (restTime < minPlayerRest) {
-            minPlayerRest = restTime;
-          }
-        }
-
-        const score = totalPlayCount * 100 - minPlayerRest;
-
-        if (score < bestScore) {
-          bestScore = score;
-          bestMatchIndex = j;
-        }
-      }
-    }
-
-    if (bestMatchIndex !== -1) {
-      const bestMatch = availableMatches[bestMatchIndex];
-
-      // Remove selected match from available pool
-      availableMatches.splice(bestMatchIndex, 1);
-
-      // Add the selected match with new ID
-      selectedMatches.push({
-        id: generateId(),
-        teamA: [...bestMatch.teamA],
-        teamB: [...bestMatch.teamB],
-        scoreA: 0,
-        scoreB: 0,
-        isCompleted: false,
-      });
-
-      // Update tracking
-      const matchPlayers = [...bestMatch.teamA, ...bestMatch.teamB];
-      for (const player of matchPlayers) {
-        playCount[player]++;
-        lastPlayedRound[player] = roundIndex;
-      }
-
-      const teamAKey = getTeamKey(bestMatch.teamA);
-      const teamBKey = getTeamKey(bestMatch.teamB);
-      teamLastPlayed[teamAKey] = roundIndex;
-      teamLastPlayed[teamBKey] = roundIndex;
-    }
-  }
+  const selectedMatches = generateRotationMatches(
+    orderedPlayers,
+    additionalRoundsCount,
+    state,
+    startingRoundIndex
+  );
 
   // Create rounds
   const rounds: Round[] = [];

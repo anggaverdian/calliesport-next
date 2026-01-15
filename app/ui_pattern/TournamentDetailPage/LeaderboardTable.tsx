@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,7 +9,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tournament, getMaxScore } from "@/utils/tournament";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { X, User } from "lucide-react";
+import { Tournament } from "@/utils/tournament";
 
 interface PlayerStats {
   name: string;
@@ -21,13 +30,32 @@ interface PlayerStats {
   finalScore: number;
 }
 
+interface PlayerPairingStats {
+  playerName: string;
+  partnerCount: number;
+  versusCount: number;
+}
+
 interface LeaderboardTableProps {
   tournament: Tournament;
 }
 
 export default function LeaderboardTable({ tournament }: LeaderboardTableProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   // Calculate player statistics
   const playerStats = calculatePlayerStats(tournament);
+
+  // Calculate pairing stats for selected player
+  const pairingStats = selectedPlayer
+    ? calculatePairingStats(tournament, selectedPlayer)
+    : [];
+
+  const handlePlayerClick = (playerName: string) => {
+    setSelectedPlayer(playerName);
+    setIsDrawerOpen(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -67,7 +95,8 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                 <TableCell
                   className={`py-3 text-sm font-medium ${
                     isFirstPlace ? "text-clx-text-default" : "text-clx-text-default"
-                  }`}
+                  } cursor-pointer hover:underline`}
+                  onClick={() => handlePlayerClick(player.name)}
                 >
                   {player.name}
                 </TableCell>
@@ -111,6 +140,76 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           <span><span className="font-medium text-clx-text-default">Pts</span> = Total point</span>
         </div>
       </div>
+
+      {/* Player Summary Drawer */}
+      <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <DrawerContent className="bg-white max-h-[85vh]">
+          <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-subtle px-4 py-3">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="text-base font-bold text-clx-text-default">
+                Player summary
+              </DrawerTitle>
+              <DrawerClose className="text-clx-text-secondary hover:text-clx-text-default">
+                <X className="h-6 w-6" />
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+
+          <div className="flex-1 overflow-auto p-4 space-y-6">
+            {/* Player Name Header */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
+                <User className="w-4 h-4 text-clx-primary" />
+              </div>
+              <span className="text-lg font-bold text-clx-text-default">
+                {selectedPlayer}
+              </span>
+            </div>
+
+            {/* Recap Section */}
+            <div className="space-y-2">
+              <h3 className="text-base font-semibold text-clx-text-default">
+                Recap for {tournament.rounds.length} rounds
+              </h3>
+
+              {/* Pairing Stats Table */}
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-clx-border-subtle hover:bg-transparent">
+                    <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-4">
+                      Player
+                    </TableHead>
+                    <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
+                      Partner up
+                    </TableHead>
+                    <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
+                      Versus
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pairingStats.map((stat) => (
+                    <TableRow
+                      key={stat.playerName}
+                      className="border-b border-clx-border-subtle bg-white hover:bg-clx-bg-neutral-hover"
+                    >
+                      <TableCell className="py-4 px-4 text-sm font-medium text-clx-text-default">
+                        {stat.playerName}
+                      </TableCell>
+                      <TableCell className="py-4 px-2 text-sm text-clx-text-default">
+                        {stat.partnerCount > 0 ? `${stat.partnerCount}x` : "-"}
+                      </TableCell>
+                      <TableCell className="py-4 px-2 text-sm text-clx-text-default">
+                        {stat.versusCount > 0 ? `${stat.versusCount}x` : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
@@ -208,4 +307,66 @@ function calculatePlayerStats(tournament: Tournament): PlayerStats[] {
     if (b.wins !== a.wins) return b.wins - a.wins;
     return b.totalPoints - a.totalPoints;
   });
+}
+
+function calculatePairingStats(
+  tournament: Tournament,
+  selectedPlayer: string
+): PlayerPairingStats[] {
+  const stats: Record<string, PlayerPairingStats> = {};
+
+  // Initialize stats for all other players
+  tournament.players.forEach((player) => {
+    if (player !== selectedPlayer) {
+      stats[player] = {
+        playerName: player,
+        partnerCount: 0,
+        versusCount: 0,
+      };
+    }
+  });
+
+  // Calculate partner and versus counts from all matches
+  tournament.rounds.forEach((round) => {
+    round.matches.forEach((match) => {
+      const teamAPlayers = match.teamA;
+      const teamBPlayers = match.teamB;
+
+      // Check if selected player is in Team A
+      if (teamAPlayers.includes(selectedPlayer)) {
+        // Partner is the other player in Team A
+        teamAPlayers.forEach((player) => {
+          if (player !== selectedPlayer && stats[player]) {
+            stats[player].partnerCount++;
+          }
+        });
+        // Opponents are players in Team B
+        teamBPlayers.forEach((player) => {
+          if (stats[player]) {
+            stats[player].versusCount++;
+          }
+        });
+      }
+      // Check if selected player is in Team B
+      else if (teamBPlayers.includes(selectedPlayer)) {
+        // Partner is the other player in Team B
+        teamBPlayers.forEach((player) => {
+          if (player !== selectedPlayer && stats[player]) {
+            stats[player].partnerCount++;
+          }
+        });
+        // Opponents are players in Team A
+        teamAPlayers.forEach((player) => {
+          if (stats[player]) {
+            stats[player].versusCount++;
+          }
+        });
+      }
+    });
+  });
+
+  // Return sorted by player name
+  return Object.values(stats).sort((a, b) =>
+    a.playerName.localeCompare(b.playerName)
+  );
 }
