@@ -190,7 +190,7 @@ export default function CreateTournament() {
       {/* Main content */}
       <div className="container">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <FieldGroup>
+          <FieldGroup className="h-screen">
             <div className="flex-1 p-4 space-y-6">
               {/* Tournament name input */}
               <Field>
@@ -329,13 +329,13 @@ export default function CreateTournament() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="h-11 px-4! border-clx-border-textfield rounded-lg gap-2 text-base pl-3.5!"
+                          className="h-11 px-4! border-clx-border-textfield rounded-lg gap-2 text-base pl-3!"
                         >
                           {/* 1. Toggle the Icon */}
                           {players.length > 0 ? (
-                            <PencilSimpleIcon size={22} className="text-clx-text-default w-auto! h-auto!" />
+                            <PencilSimpleIcon size={16} className="text-clx-text-default w-auto! h-auto!" />
                           ) : (
-                            <PlusIcon size={22} className="text-clx-text-default w-auto! h-auto!" />
+                            <PlusIcon size={16} className="text-clx-text-default w-auto! h-auto!" />
                           )}
 
                           {/* 2. Toggle the Text */}
