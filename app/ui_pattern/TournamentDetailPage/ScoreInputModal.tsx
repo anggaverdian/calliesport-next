@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Match } from "@/utils/tournament";
+import { Button } from "@/components/ui/button";
 
 interface ScoreInputModalProps {
   isOpen: boolean;
@@ -71,7 +72,7 @@ export default function ScoreInputModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-6">
           {/* Score grid */}
           <div className="grid grid-cols-6 gap-2">
             {scoreOptions.map((score) => {
@@ -95,13 +96,11 @@ export default function ScoreInputModal({
 
           {/* Reset button - only show if match has a score */}
           {hasScore && onReset && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full h-10 rounded-md text-sm font-medium bg-white border border-clx-border-danger text-clx-text-danger hover:bg-red-50 transition-colors"
-            >
-              Reset Score
-            </button>
+            <div className="w-full text-center">
+            <Button variant={"outline"} onClick={handleReset}>
+                Reset Score
+            </Button>
+            </div>
           )}
         </div>
       </DialogContent>

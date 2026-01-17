@@ -186,7 +186,7 @@ export default function TournamentDetailPage() {
 
     if (updatedTournament) {
       setTournament(updatedTournament);
-      toast.success("Score reset successfully");
+      //toast.success("Score reset successfully");
     }
   };
 
