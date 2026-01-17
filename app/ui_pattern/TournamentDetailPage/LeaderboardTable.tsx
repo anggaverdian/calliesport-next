@@ -143,7 +143,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
 
       {/* Player Summary Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="bg-white max-h-[85vh]">
+        <DrawerContent className="bg-white max-h-[85vh]" showHandle={false}>
           <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-subtle px-4 py-3">
             <div className="flex items-center justify-between">
               <DrawerTitle className="text-base font-bold text-clx-text-default">
