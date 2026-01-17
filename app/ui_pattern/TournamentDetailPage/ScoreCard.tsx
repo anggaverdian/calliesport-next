@@ -13,9 +13,9 @@ interface ScoreCardProps {
 export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: ScoreCardProps) {
   // Determine winner/loser/tie when match is completed
   const isCompleted = match.isCompleted;
-  const isTie = isCompleted && match.scoreA === match.scoreB;
-  const teamAWins = isCompleted && !isTie && match.scoreA > match.scoreB;
-  const teamBWins = isCompleted && !isTie && match.scoreB > match.scoreA;
+  const isTie = isCompleted && match.scoreA !== null && match.scoreB !== null && match.scoreA === match.scoreB;
+  const teamAWins = isCompleted && !isTie && match.scoreA !== null && match.scoreB !== null && match.scoreA > match.scoreB;
+  const teamBWins = isCompleted && !isTie && match.scoreA !== null && match.scoreB !== null && match.scoreB > match.scoreA;
 
   // Score button styles
   const getScoreButtonStyle = (isWinner: boolean, isLoser: boolean) => {
@@ -76,7 +76,7 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
             className={`flex flex-col items-center justify-center w-[52px] h-12 rounded-md ${getScoreButtonStyle(teamAWins, teamBWins)}`}
           >
             <span className="font-score text-[28px] leading-7">
-              {match.scoreA.toString().padStart(2, "0")}
+              {(match.scoreA ?? 0).toString().padStart(2, "0")}
             </span>
           </button>
           <span className="text-base font-semibold text-clx-text-placeholder">:</span>
@@ -86,7 +86,7 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
             className={`flex flex-col items-center justify-center w-[52px] h-12 rounded-md ${getScoreButtonStyle(teamBWins, teamAWins)}`}
           >
             <span className="font-score text-[28px] leading-7">
-              {match.scoreB.toString().padStart(2, "0")}
+              {(match.scoreB ?? 0).toString().padStart(2, "0")}
             </span>
           </button>
         </div>

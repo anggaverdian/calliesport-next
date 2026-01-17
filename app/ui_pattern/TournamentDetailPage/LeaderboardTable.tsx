@@ -234,7 +234,7 @@ function calculatePlayerStats(tournament: Tournament): PlayerStats[] {
   // Calculate stats from completed matches
   tournament.rounds.forEach((round) => {
     round.matches.forEach((match) => {
-      if (match.isCompleted) {
+      if (match.isCompleted && match.scoreA !== null && match.scoreB !== null) {
         const isTie = match.scoreA === match.scoreB;
         const teamAWins = match.scoreA > match.scoreB;
         const teamBWins = match.scoreB > match.scoreA;
@@ -242,7 +242,7 @@ function calculatePlayerStats(tournament: Tournament): PlayerStats[] {
         // Update Team A players
         match.teamA.forEach((player) => {
           stats[player].matchesPlayed++;
-          stats[player].totalPoints += match.scoreA;
+          stats[player].totalPoints += match.scoreA!;
 
           if (isTie) {
             stats[player].ties++;
@@ -256,7 +256,7 @@ function calculatePlayerStats(tournament: Tournament): PlayerStats[] {
         // Update Team B players
         match.teamB.forEach((player) => {
           stats[player].matchesPlayed++;
-          stats[player].totalPoints += match.scoreB;
+          stats[player].totalPoints += match.scoreB!;
 
           if (isTie) {
             stats[player].ties++;

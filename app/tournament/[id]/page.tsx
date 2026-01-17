@@ -172,6 +172,24 @@ export default function TournamentDetailPage() {
     }
   };
 
+  const handleResetScore = () => {
+    if (!currentRoundData) return;
+
+    const match = currentRoundData.matches[selectedMatchIndex];
+    const updatedTournament = updateMatchScore(
+      tournament.id,
+      currentRound,
+      match.id,
+      null,
+      null
+    );
+
+    if (updatedTournament) {
+      setTournament(updatedTournament);
+      toast.success("Score reset successfully");
+    }
+  };
+
   const isRoundCompleted = currentRoundData?.matches.every(m => m.isCompleted) ?? false;
 
   // Calculate initial rounds count (set 1)
@@ -385,6 +403,7 @@ export default function TournamentDetailPage() {
           maxScore={maxScore}
           team={selectedTeam}
           onSave={handleSaveScore}
+          onReset={handleResetScore}
         />
       )}
 

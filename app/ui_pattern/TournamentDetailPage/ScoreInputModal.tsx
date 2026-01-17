@@ -16,6 +16,7 @@ interface ScoreInputModalProps {
   maxScore: number;
   team: "A" | "B";
   onSave: (scoreA: number, scoreB: number) => void;
+  onReset?: () => void;
 }
 
 export default function ScoreInputModal({
@@ -25,6 +26,7 @@ export default function ScoreInputModal({
   maxScore,
   team,
   onSave,
+  onReset,
 }: ScoreInputModalProps) {
   // Generate score options (0 to maxScore)
   const scoreOptions = Array.from({ length: maxScore + 1 }, (_, i) => i);
@@ -47,6 +49,16 @@ export default function ScoreInputModal({
     onClose();
   };
 
+  const handleReset = () => {
+    if (onReset) {
+      onReset();
+      onClose();
+    }
+  };
+
+  // Check if the match has been completed (scores have been entered)
+  const hasScore = match.isCompleted;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[320px] rounded-md p-0 gap-0">
@@ -59,7 +71,7 @@ export default function ScoreInputModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           {/* Score grid */}
           <div className="grid grid-cols-6 gap-2">
             {scoreOptions.map((score) => {
@@ -80,6 +92,17 @@ export default function ScoreInputModal({
               );
             })}
           </div>
+
+          {/* Reset button - only show if match has a score */}
+          {hasScore && onReset && (
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full h-10 rounded-md text-sm font-medium bg-white border border-clx-border-danger text-clx-text-danger hover:bg-red-50 transition-colors"
+            >
+              Reset Score
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

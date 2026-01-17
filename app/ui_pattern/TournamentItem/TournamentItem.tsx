@@ -11,14 +11,14 @@ import { Tournament, teamTypeNames, calculateRounds, TeamType } from "@/utils/to
 
 // SVG imports for team type icons
 import thunderIcon from "../../../public/thunder.svg";
-import chartIcon from "../../../public/Chart.svg";
+import chartIcon from "../../../public/charts.svg";
 import upIcon from "../../../public/Up.svg";
 import starIcon from "../../../public/Star.svg";
 
 // Team type icon mapping
 const teamTypeIcons: Record<TeamType, string> = {
-  standard: thunderIcon,
-  mix: chartIcon,
+  standard: chartIcon,
+  mix: thunderIcon,
   team: upIcon,
   mexicano: starIcon,
 };

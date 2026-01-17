@@ -27,20 +27,34 @@ import {
   FieldGroup,
 } from "@/components/ui/field";
 import { createTournamentSchema, type CreateTournamentFormData } from "@/utils/form-schemas";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // SVG imports for team type icons
 import thunderIcon from "../../public/thunder.svg";
-import chartIcon from "../../public/Chart.svg";
+import chartIcon from "../../public/charts.svg";
 import upIcon from "../../public/Up.svg";
-import starIcon from "../../public/Star.svg";
 import { saveTournament, TeamType } from "@/utils/tournament";
 
-// Team type options
+// Team type options with descriptions matching Figma design
 const teamTypes = [
-  { id: "standard", name: "Standard", subname: "Americano", icon: thunderIcon },
-  { id: "mix", name: "Mix", subname: "Americano", icon: chartIcon },
-  { id: "team", name: "Team", subname: "Americano", icon: upIcon },
-  { id: "mexicano", name: "Standard", subname: "Mexicano", icon: starIcon },
+  {
+    id: "standard",
+    name: "Americano",
+    description: "A format where you play with different partners every round.",
+    icon: chartIcon
+  },
+  {
+    id: "mix",
+    name: "Mix Americano",
+    description: "The standard format specifically designed for mixed-gender pairs (man & woman).",
+    icon: thunderIcon
+  },
+  {
+    id: "team",
+    name: "Team Americano",
+    description: "Fixed partner for the entire tournament use team score point.",
+    icon: upIcon
+  },
 ];
 
 // Point match options
@@ -207,46 +221,59 @@ export default function CreateTournament() {
               {/* Team type selection */}
               <Field>
                 <div className="space-y-2">
-                  <div className="pb-2">
-                    <p className="text-base font-semibold text-clx-text-default">Which team up you want to play?</p>
+                  <div>
+                    <p className="text-base font-semibold text-clx-text-default tracking-[0.2px]">Which team up you want to play?</p>
                     <p className="text-xs text-clx-text-dark-subtle">Determine your team pairing</p>
                   </div>
                   <Controller
                     name="teamType"
                     control={control}
                     render={({ field }) => (
-                      <div className="flex gap-2 overflow-x-auto pb-2">
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="flex flex-col gap-2"
+                      >
                         {teamTypes.map((team) => {
                           const isSelected = field.value === team.id;
                           return (
-                            <button
-                              type="button"
+                            <label
                               key={team.id}
-                              onClick={() => field.onChange(team.id)}
-                              className={`flex flex-col items-center justify-center gap-3 min-w-[116px] h-[148px] px-4 py-6 rounded-lg transition-all ${
+                              htmlFor={`team-${team.id}`}
+                              className={`flex items-center gap-5 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
                                 isSelected
-                                  ? "bg-clx-bg-accent-subtle border border-clx-border-accent-bold"
-                                  : "bg-clx-bg-neutral-bold hover:bg-clx-bg-neutral-hover"
+                                  ? "bg-clx-bg-neutral-bold border-clx-border-default"
+                                  : "bg-white border-clx-border-default"
                               }`}
                             >
                               <Image
                                 src={team.icon}
-                                width={48}
-                                height={48}
-                                alt={`${team.name} ${team.subname}`}
+                                width={27}
+                                height={24}
+                                alt={team.name}
+                                className="shrink-0"
                               />
-                              <div className="text-center">
-                                <p className={`text-sm ${isSelected ? "font-medium" : "font-normal"} text-clx-text-default`}>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-clx-text-default leading-5 tracking-[0.2px]">
                                   {team.name}
                                 </p>
-                                <p className={`text-sm ${isSelected ? "font-medium" : "font-normal"} text-clx-text-default`}>
-                                  {team.subname}
+                                <p className="text-xs text-clx-text-secondary leading-[18px]">
+                                  {team.description}
                                 </p>
                               </div>
-                            </button>
+                              <RadioGroupItem
+                                value={team.id}
+                                id={`team-${team.id}`}
+                                className={`shrink-0 size-4 border ${
+                                  isSelected
+                                    ? "border-clx-border-accent-bold bg-clx-bg-accent text-white"
+                                    : "border-clx-border-textfield bg-white"
+                                }`}
+                              />
+                            </label>
                           );
                         })}
-                      </div>
+                      </RadioGroup>
                     )}
                   />
                 </div>
@@ -271,10 +298,10 @@ export default function CreateTournament() {
                               type="button"
                               key={point.id}
                               onClick={() => field.onChange(point.id)}
-                              className={`shrink-0 whitespace-nowrap px-4 py-2 h-9 rounded-full text-sm transition-all ${
+                              className={`shrink-0 whitespace-nowrap px-3 py-1.5 h-auto rounded-full text-sm transition-all ${
                                 isSelected
-                                  ? "bg-clx-bg-dark text-clx-text-white font-semibold border-0"
-                                  : "bg-clx-bg-neutral-bold text-clx-text-default font-normal border-0 hover:bg-clx-bg-neutral-hover"
+                                  ? "bg-clx-bg-neutral-bold text-clx-text-default font-semibold border-1 border-clx-border-default"
+                                  : "bg-white text-clx-text-secondary font-normal border-1 hover:bg-clx-bg-neutral-hover"
                               }`}
                             >
                               {point.label}
@@ -429,9 +456,9 @@ export default function CreateTournament() {
                       <p className="text-sm text-clx-text-danger">{errors.players.message}</p>
                     </div>
                   )}
-                  <div className="flex gap-2.5 w-full flex-wrap">
+                  <div className="flex gap-2 w-full flex-wrap">
                     {players.map((player, index) => (
-                      <Badge key={index} className="text-base min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">{player}</Badge>
+                      <Badge key={index} className="text-sm min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">{player}</Badge>
                     ))}
                   </div>
                 </div>

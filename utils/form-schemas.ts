@@ -24,8 +24,8 @@ const MatchSchema = z.object({
   id: z.string(),
   teamA: z.array(z.string()),
   teamB: z.array(z.string()),
-  scoreA: z.number(),
-  scoreB: z.number(),
+  scoreA: z.number().nullable(),
+  scoreB: z.number().nullable(),
   isCompleted: z.boolean(),
 });
 
