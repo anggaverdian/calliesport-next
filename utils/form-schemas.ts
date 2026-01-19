@@ -10,7 +10,7 @@ export const createTournamentSchema = z.object({
   players: z
     .array(z.string())
     .min(4, "Add at least 4 players")
-    .max(12, "Maximum 12 players allowed"),
+    .max(10, "Maximum 10 players allowed"),
 });
 
 export type CreateTournamentFormData = z.infer<typeof createTournamentSchema>;

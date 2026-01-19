@@ -137,17 +137,8 @@ export default function CreateTournament() {
       const totalPlayers = players.length + newPlayers.length;
 
       // Check if adding these players would exceed max limit
-      if (totalPlayers > 12) {
-        const canAdd = 12 - players.length;
-        if (canAdd <= 0) {
-          toast.error("Maximum 12 players allowed");
-          return;
-        }
-        // Only add up to the limit
-        const playersToAdd = newPlayers.slice(0, canAdd);
-        setValue("players", [...players, ...playersToAdd], { shouldValidate: true });
-        setPlayerInput("");
-        toast.success(`Added ${playersToAdd.length} player(s). Maximum 12 players reached.`);
+      if (totalPlayers > 10) {
+        setPlayerInputError(`Maximum 10 players allowed. You already have (${players.length} players).`);
         return;
       }
 
@@ -319,9 +310,9 @@ export default function CreateTournament() {
                 <div className="space-y-4 pb-8 pt-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xl font-bold text-clx-text-default">Players</p>
-                      <p className="text-sm text-clx-text-default">
-                        Total <span className="font-medium">{players.length} players</span> added
+                      <p className="text-lg font-bold text-clx-text-default">Players</p>
+                      <p className="text-sm text-clx-text-dark-subtle">
+                        <span className="text-xs">Total {players.length} players added</span>
                       </p>
                     </div>
                     <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} modal={true}>
@@ -345,7 +336,7 @@ export default function CreateTournament() {
                         </Button>
                       </DrawerTrigger>
                       <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={false}>
-                        <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-default px-4 pb-4 pt-4 shrink-0">
+                        <DrawerHeader className="bg-neutral-100 border-b border-clx-border-default px-4 pb-3 pt-4 shrink-0">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <DrawerClose asChild>
