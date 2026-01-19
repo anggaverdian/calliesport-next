@@ -352,27 +352,52 @@ const WHIST_MATRIX_6_PLAYERS: [number, number, number, number][] = [
   [0, 5, 3, 4], 
   [1, 2, 0, 5], 
   [3, 4, 1, 2]  
-
-  /*[0, 1, 2, 3], // Round 1:  (0,1) vs (2,3) | Rest: 4,5
-  [2, 3, 4, 5], // Round 2:  (0,1) vs (2,4) | Rest: 3,5
-  [4, 5, 0, 1], // Round 3:  (0,2) vs (1,5) | Rest: 3,4
-
-  [0, 2, 1, 3], // Round 4:  (0,3) vs (1,4) | Rest: 2,5
-  [2, 4, 3, 5], // Round 5:  (0,3) vs (1,5) | Rest: 2,4
-  [4, 0, 5, 1], // Round 6:  (0,5) vs (1,4) | Rest: 2,3
-
-  [0, 2, 3, 4], // Round 7:  (0,2) vs (3,4) | Rest: 1,5
-  [0, 5, 2, 3], // Round 8:  (0,5) vs (2,3) | Rest: 1,4
-  [0, 4, 2, 5], // Round 9:  (0,4) vs (2,5) | Rest: 1,3
-  
-  [0, 4, 3, 5], // Round 10: (0,4) vs (3,5) | Rest: 1,2
-  [1, 2, 3, 4], // Round 11: (1,2) vs (3,4) | Rest: 0,5
-  [1, 3, 2, 5], // Round 12: (1,3) vs (2,5) | Rest: 0,4
-
-  [1, 2, 4, 5], // Round 13: (1,2) vs (4,5) | Rest: 0,3
-  [1, 3, 4, 5], // Round 14: (1,3) vs (4,5) | Rest: 0,2
-  [2, 4, 3, 5], // Round 15: (2,4) vs (3,5) | Rest: 0,1*/
 ];
+
+// ============================================================================
+// PERFECT WHIST TOURNAMENT MATRIX FOR 7 PLAYERS
+// This ensures perfectly balanced pairing:
+// - Each player plays exactly 12 matches
+// - Each player partners with everyone else exactly 2 times
+// - Each player opposes everyone else exactly 4 times
+// - Each player rests exactly 9 times
+// - No player plays more than 3 consecutive rounds
+// ============================================================================
+
+// Perfect Whist Tournament Matrix for 7 players (21 rounds)
+// Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-6
+// Resting player for each round is the one not in the match (7 - 4 = 3 resting)
+const WHIST_MATRIX_7_PLAYERS: [number, number, number, number][] = [
+    // --- SET 1: Based on pattern [0, 1] vs [2, 4] ---
+    // Balances: Partner Diff 1 & 2 / Versus Diff 1, 2, 3
+    [0, 1, 2, 4], // Round 1   (Rest: 3, 5, 6)
+    [1, 2, 3, 5], // Round 2   (Rest: 4, 6, 0)
+    [2, 3, 4, 6], // Round 3   (Rest: 5, 0, 1)
+    [3, 4, 5, 0], // Round 4   (Rest: 6, 1, 2)
+    [4, 5, 6, 1], // Round 5   (Rest: 0, 2, 3)
+    [5, 6, 0, 2], // Round 6   (Rest: 1, 3, 4)
+    [6, 0, 1, 3], // Round 7   (Rest: 2, 4, 5)
+
+    // --- SET 2: Based on pattern [0, 6] vs [2, 5] ---
+    // Balances: Partner Diff 1 & 3 / Versus Diff 1, 2, 3
+    [0, 6, 2, 5], // Round 8   (Rest: 1, 3, 4)
+    [1, 0, 3, 6], // Round 9   (Rest: 2, 4, 5)
+    [2, 1, 4, 0], // Round 10  (Rest: 3, 5, 6)
+    [3, 2, 5, 1], // Round 11  (Rest: 4, 6, 0)
+    [4, 3, 6, 2], // Round 12  (Rest: 5, 0, 1)
+    [5, 4, 0, 3], // Round 13  (Rest: 6, 1, 2)
+    [6, 5, 1, 4], // Round 14  (Rest: 0, 2, 3)
+
+    // --- SET 3: Based on pattern [0, 2] vs [1, 4] ---
+    // Balances: Partner Diff 2 & 3 / Versus Diff 1, 2, 3
+    [0, 2, 1, 4], // Round 15  (Rest: 3, 5, 6)
+    [1, 3, 2, 5], // Round 16  (Rest: 4, 6, 0)
+    [2, 4, 3, 6], // Round 17  (Rest: 5, 0, 1)
+    [3, 5, 4, 0], // Round 18  (Rest: 6, 1, 2)
+    [4, 6, 5, 1], // Round 19  (Rest: 0, 2, 3)
+    [5, 0, 6, 2], // Round 20  (Rest: 1, 3, 4)
+    [6, 1, 0, 3]  // Round 21  (Rest: 2, 4, 5)
+]
 
 // ============================================================================
 // PERFECT WHIST TOURNAMENT MATRIX FOR 8 PLAYERS
@@ -387,36 +412,91 @@ const WHIST_MATRIX_6_PLAYERS: [number, number, number, number][] = [
 const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
   [0, 1, 2, 3], // Round 1:  --> Random
   [4, 5, 6, 7], // Round 2:  --> Rest player play
-  [1, 7, 0, 6], // Round 3:  
-  [3, 5, 4, 2], // Round 4:  
-  [0, 3, 5, 6], // Round 5:  
-  [4, 7, 2, 1], // Round 6:  
-  [1, 6, 2, 5], // Round 7:  
-  [4, 3, 0, 7], // Round 8:  
-  [4, 6, 3, 1], // Round 9:  
-  [2, 0, 5, 7], // Round 10: 
-  [2, 6, 4, 0], // Round 11: 
-  [3, 7, 1, 5], // Round 12: 
-  [0, 5, 4, 1], // Round 13: 
-  [2, 7, 3, 6], // Round 14: 
+  [1, 7, 0, 6], // Round 3:
+  [3, 5, 4, 2], // Round 4:
+  [0, 3, 5, 6], // Round 5:
+  [4, 7, 2, 1], // Round 6:
+  [1, 6, 2, 5], // Round 7:
+  [4, 3, 0, 7], // Round 8:
+  [4, 6, 3, 1], // Round 9:
+  [2, 0, 5, 7], // Round 10:
+  [2, 6, 4, 0], // Round 11:
+  [3, 7, 1, 5], // Round 12:
+  [0, 5, 4, 1], // Round 13:
+  [2, 7, 3, 6], // Round 14:
 ];
 
-/*const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
-  [0, 1, 2, 3], // Round 1:  (0,1) vs (2,3) | Rest: 4,5,6,7
-  [0, 2, 1, 4], // Round 2:  (0,2) vs (1,4) | Rest: 3,5,6,7
-  [0, 3, 4, 5], // Round 3:  (0,3) vs (4,5) | Rest: 1,2,6,7
-  [0, 4, 6, 7], // Round 4:  (0,4) vs (6,7) | Rest: 1,2,3,5
-  [0, 5, 2, 6], // Round 5:  (0,5) vs (2,6) | Rest: 1,3,4,7
-  [0, 6, 1, 7], // Round 6:  (0,6) vs (1,7) | Rest: 2,3,4,5
-  [0, 7, 3, 5], // Round 7:  (0,7) vs (3,5) | Rest: 1,2,4,6
-  [1, 2, 5, 7], // Round 8:  (1,2) vs (5,7) | Rest: 0,3,4,6
-  [1, 3, 5, 6], // Round 9:  (1,3) vs (5,6) | Rest: 0,2,4,7
-  [1, 5, 4, 7], // Round 10: (1,5) vs (4,7) | Rest: 0,2,3,6
-  [1, 6, 3, 4], // Round 11: (1,6) vs (3,4) | Rest: 0,2,5,7
-  [2, 4, 3, 7], // Round 12: (2,4) vs (3,7) | Rest: 0,1,5,6
-  [2, 5, 4, 6], // Round 13: (2,5) vs (4,6) | Rest: 0,1,3,7
-  [2, 7, 3, 6], // Round 14: (2,7) vs (3,6) | Rest: 0,1,4,5
-];*/
+// Generate matches for 7 players using Perfect Whist Tournament Matrix
+function generateWhistMatches7Players(
+  players: string[],
+  numRounds: number,
+  startRoundIndex: number = 0
+): Match[] {
+  if (players.length !== 7) {
+    throw new Error("Whist matrix is only for 7 players");
+  }
+
+  const matches: Match[] = [];
+
+  for (let i = 0; i < numRounds; i++) {
+    const roundIndex = startRoundIndex + i;
+    const matrixIndex = roundIndex % WHIST_MATRIX_7_PLAYERS.length;
+    const [a1, a2, b1, b2] = WHIST_MATRIX_7_PLAYERS[matrixIndex];
+
+    const match: Match = {
+      id: generateId(),
+      teamA: [players[a1], players[a2]],
+      teamB: [players[b1], players[b2]],
+      scoreA: null,
+      scoreB: null,
+      isCompleted: false,
+    };
+
+    matches.push(match);
+  }
+
+  return matches;
+}
+
+// Generate matches for 7 players with a specific first match using Whist Matrix
+function generateWhistMatches7PlayersWithFirstMatch(
+  players: string[],
+  teamA: [string, string],
+  teamB: [string, string],
+  numRounds: number
+): Match[] {
+  if (players.length !== 7) {
+    throw new Error("Whist matrix is only for 7 players");
+  }
+
+  // For 7 players, the first round in the matrix is [0, 1, 2, 4]
+  // This means: index 0 & 1 are partners (teamA), index 2 & 4 are partners (teamB)
+  // We need to reorder the players array so the user's selection maps to these indices:
+  // - teamA[0] → index 0
+  // - teamA[1] → index 1
+  // - teamB[0] → index 2
+  // - teamB[1] → index 4
+  // - remaining players → indices 3, 5, 6
+
+  const firstMatchPlayers = [...teamA, ...teamB];
+  const remainingPlayers = players.filter(p => !firstMatchPlayers.includes(p));
+  const shuffledRemaining = shuffleArray(remainingPlayers);
+
+  // Build the reordered players array to match matrix expectations
+  const reorderedPlayers: string[] = new Array(7);
+  reorderedPlayers[0] = teamA[0];  // teamA partner 1
+  reorderedPlayers[1] = teamA[1];  // teamA partner 2
+  reorderedPlayers[2] = teamB[0];  // teamB partner 1
+  reorderedPlayers[4] = teamB[1];  // teamB partner 2
+  // Fill remaining indices 3, 5, 6 with shuffled remaining players
+  reorderedPlayers[3] = shuffledRemaining[0];
+  reorderedPlayers[5] = shuffledRemaining[1];
+  reorderedPlayers[6] = shuffledRemaining[2];
+
+  // Now generate all matches using the standard Whist matrix function
+  // The first match will automatically be teamA vs teamB because of the reordering
+  return generateWhistMatches7Players(reorderedPlayers, numRounds, 0);
+}
 
 // Generate matches for 8 players using Perfect Whist Tournament Matrix
 function generateWhistMatches8Players(
@@ -461,37 +541,31 @@ function generateWhistMatches8PlayersWithFirstMatch(
     throw new Error("Whist matrix is only for 8 players");
   }
 
-  const matches: Match[] = [];
+  // For 8 players, the first round in the matrix is [0, 1, 2, 3]
+  // This means: index 0 & 1 are partners (teamA), index 2 & 3 are partners (teamB)
+  // We need to reorder the players array so the user's selection maps to these indices:
+  // - teamA[0] → index 0
+  // - teamA[1] → index 1
+  // - teamB[0] → index 2
+  // - teamB[1] → index 3
+  // - remaining players → indices 4, 5, 6, 7
 
-  // Create the first match with user-specified teams
-  const firstMatch: Match = {
-    id: generateId(),
-    teamA: [...teamA],
-    teamB: [...teamB],
-    scoreA: 0,
-    scoreB: 0,
-    isCompleted: false,
-  };
-  matches.push(firstMatch);
+  const firstMatchPlayers = [...teamA, ...teamB];
+  const remainingPlayers = players.filter(p => !firstMatchPlayers.includes(p));
+  const shuffledRemaining = shuffleArray(remainingPlayers);
 
-  // Generate remaining matches using the Whist matrix starting from round 2
-  for (let i = 1; i < numRounds; i++) {
-    const matrixIndex = i % WHIST_MATRIX_8_PLAYERS.length;
-    const [a1, a2, b1, b2] = WHIST_MATRIX_8_PLAYERS[matrixIndex];
+  // Build the reordered players array to match matrix expectations
+  const reorderedPlayers: string[] = [
+    teamA[0],           // index 0: teamA partner 1
+    teamA[1],           // index 1: teamA partner 2
+    teamB[0],           // index 2: teamB partner 1
+    teamB[1],           // index 3: teamB partner 2
+    ...shuffledRemaining // indices 4-7: remaining players
+  ];
 
-    const match: Match = {
-      id: generateId(),
-      teamA: [players[a1], players[a2]],
-      teamB: [players[b1], players[b2]],
-      scoreA: null,
-      scoreB: null,
-      isCompleted: false,
-    };
-
-    matches.push(match);
-  }
-
-  return matches;
+  // Now generate all matches using the standard Whist matrix function
+  // The first match will automatically be teamA vs teamB because of the reordering
+  return generateWhistMatches8Players(reorderedPlayers, numRounds, 0);
 }
 
 // Generate matches for 6 players using Perfect Whist Tournament Matrix
@@ -537,37 +611,31 @@ function generateWhistMatches6PlayersWithFirstMatch(
     throw new Error("Whist matrix is only for 6 players");
   }
 
-  const matches: Match[] = [];
+  // For 6 players, the first round in the matrix is [0, 1, 2, 3]
+  // This means: index 0 & 1 are partners (teamA), index 2 & 3 are partners (teamB)
+  // We need to reorder the players array so the user's selection maps to these indices:
+  // - teamA[0] → index 0
+  // - teamA[1] → index 1
+  // - teamB[0] → index 2
+  // - teamB[1] → index 3
+  // - remaining players → indices 4, 5
 
-  // Create the first match with user-specified teams
-  const firstMatch: Match = {
-    id: generateId(),
-    teamA: [...teamA],
-    teamB: [...teamB],
-    scoreA: 0,
-    scoreB: 0,
-    isCompleted: false,
-  };
-  matches.push(firstMatch);
+  const firstMatchPlayers = [...teamA, ...teamB];
+  const remainingPlayers = players.filter(p => !firstMatchPlayers.includes(p));
+  const shuffledRemaining = shuffleArray(remainingPlayers);
 
-  // Generate remaining matches using the Whist matrix starting from round 2
-  for (let i = 1; i < numRounds; i++) {
-    const matrixIndex = i % WHIST_MATRIX_6_PLAYERS.length;
-    const [a1, a2, b1, b2] = WHIST_MATRIX_6_PLAYERS[matrixIndex];
+  // Build the reordered players array to match matrix expectations
+  const reorderedPlayers: string[] = [
+    teamA[0],           // index 0: teamA partner 1
+    teamA[1],           // index 1: teamA partner 2
+    teamB[0],           // index 2: teamB partner 1
+    teamB[1],           // index 3: teamB partner 2
+    ...shuffledRemaining // indices 4-5: remaining players
+  ];
 
-    const match: Match = {
-      id: generateId(),
-      teamA: [players[a1], players[a2]],
-      teamB: [players[b1], players[b2]],
-      scoreA: null,
-      scoreB: null,
-      isCompleted: false,
-    };
-
-    matches.push(match);
-  }
-
-  return matches;
+  // Now generate all matches using the standard Whist matrix function
+  // The first match will automatically be teamA vs teamB because of the reordering
+  return generateWhistMatches6Players(reorderedPlayers, numRounds, 0);
 }
 
 // Validation function to verify Whist matrix balance
@@ -605,9 +673,10 @@ function validateWhistMatrixBalance(matches: Match[], players: string[]): void {
 
   // Expected values depend on player count
   // 6 players: partner=2, versus=4
+  // 7 players: partner=2, versus=4
   // 8 players: partner=1, versus=2
-  const expectedPartner = players.length === 6 ? 2 : 1;
-  const expectedVersus = players.length === 6 ? 4 : 2;
+  const expectedPartner = players.length === 8 ? 1 : 2;
+  const expectedVersus = players.length === 8 ? 2 : 4;
 
   // Log validation results
   console.log(`=== Whist Matrix Validation (${players.length} Players) ===`);
@@ -743,9 +812,13 @@ export function generateTournamentRounds(players: string[]): Round[] {
 
   let selectedMatches: Match[];
 
-  // Use Perfect Whist Tournament Matrix for 6 and 8 players (perfectly balanced)
+  // Use Perfect Whist Tournament Matrix for 6, 7, and 8 players (perfectly balanced)
   if (players.length === 6) {
     selectedMatches = generateWhistMatches6Players(shuffledPlayers, totalRounds, 0);
+    // Validate the balance (will log to console)
+    validateWhistMatrixBalance(selectedMatches, shuffledPlayers);
+  } else if (players.length === 7) {
+    selectedMatches = generateWhistMatches7Players(shuffledPlayers, totalRounds, 0);
     // Validate the balance (will log to console)
     validateWhistMatrixBalance(selectedMatches, shuffledPlayers);
   } else if (players.length === 8) {
@@ -810,9 +883,18 @@ export function generateTournamentRoundsWithFirstMatch(
 
   let allMatches: Match[];
 
-  // Use Perfect Whist Tournament Matrix for 6 and 8 players (perfectly balanced)
+  // Use Perfect Whist Tournament Matrix for 6, 7, and 8 players (perfectly balanced)
   if (players.length === 6) {
     allMatches = generateWhistMatches6PlayersWithFirstMatch(
+      orderedPlayers,
+      teamA,
+      teamB,
+      totalRounds
+    );
+    // Validate the balance (will log to console)
+    validateWhistMatrixBalance(allMatches, orderedPlayers);
+  } else if (players.length === 7) {
+    allMatches = generateWhistMatches7PlayersWithFirstMatch(
       orderedPlayers,
       teamA,
       teamB,
@@ -1063,9 +1145,15 @@ function generateAdditionalRounds(
   const startingRoundIndex = existingRounds.length;
   let selectedMatches: Match[];
 
-  // Use Perfect Whist Tournament Matrix for 6 and 8 players (perfectly balanced)
+  // Use Perfect Whist Tournament Matrix for 6, 7, and 8 players (perfectly balanced)
   if (players.length === 6) {
     selectedMatches = generateWhistMatches6Players(
+      orderedPlayers,
+      additionalRoundsCount,
+      startingRoundIndex
+    );
+  } else if (players.length === 7) {
+    selectedMatches = generateWhistMatches7Players(
       orderedPlayers,
       additionalRoundsCount,
       startingRoundIndex

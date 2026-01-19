@@ -118,6 +118,17 @@ const form = useForm<FormData>({
 - Uses Drawer components for modals (mobile UX)
 - Touch-optimized spacing and buttons
 
+### UI Components
+- **Always use shadcn/ui components** when building pages or UI patterns
+- Use Shadcn components like Button, Label, Badge, Input, Select, Form components or et cetera from `components/ui/`
+- Avoid raw HTML elements where shadcn equivalents exist
+
+## UI Components Policy
+- **Shadcn UI**: If a required component is missing from the `components/ui` directory, install it using the command: `npx shadcn@latest add "component name"`.
+**Minimalist Installation**: Only install a Shadcn component if it is actually intended to be used in the current task. Do not install components that will not be immediately implemented.
+- Do not manually create basic UI primitives if they are available in Shadcn.
+- Always check `@/components/ui` before adding new UI logic.
+
 ### Validation & Error Handling
 - localStorage reads validate with Zod schemas, fallback to empty array on corruption
 - Tournament not found redirects to home with toast notification
