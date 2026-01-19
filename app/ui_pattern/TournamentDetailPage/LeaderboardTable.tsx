@@ -562,27 +562,23 @@ function RoundCard({ roundInfo }: RoundCardProps) {
         {/* Score */}
         <div className="flex items-center gap-1.5 font-score">
           <div
-            className={`w-9 h-8 rounded-md flex items-center justify-center ${
+            className={`w-9 h-8 rounded-md flex items-center justify-center text-base font-medium ${
               isCompleted && teamAWins
                 ? "bg-clx-bg-success text-white"
-                : "bg-clx-bg-dark text-white px-2 py-1.5 rounded-md text-base font-medium"
+                : "bg-clx-bg-dark text-white"
             }`}
           >
-            <span className="bg-clx-bg-dark text-white px-2 py-1.5 rounded-md text-base font-medium">
-              {formatScore(scoreA)}
-            </span>
+            {formatScore(scoreA)}
           </div>
           <span className="text-clx-text-placeholder font-semibold">:</span>
           <div
-            className={`w-9 h-8 rounded-md flex items-center justify-center ${
+            className={`w-9 h-8 rounded-md flex items-center justify-center text-base font-medium ${
               isCompleted && teamBWins
                 ? "bg-clx-bg-success text-white"
-                : "bg-clx-bg-dark text-white px-2 py-1.5 rounded-md text-base font-medium"
+                : "bg-clx-bg-dark text-white"
             }`}
           >
-            <span className="">
-              {formatScore(scoreB)}
-            </span>
+            {formatScore(scoreB)}
           </div>
         </div>
 
