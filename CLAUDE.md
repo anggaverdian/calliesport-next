@@ -155,3 +155,13 @@ const form = useForm<FormData>({
 1. Add to `pointType` options in create tournament form
 2. Update `getMaxScore()` switch statement
 3. Update `getPointTypeLabel()` for display
+
+## UI & Iconography Norms
+- **Primary Icon Library:** Always use **Phosphor Icons**. Do not use Lucide, Heroicons, or FontAwesome.
+- **Library Package:** Use `@phosphor-icons/react`.
+- **Import Pattern:** Use named imports: `import { Horse, Heart, Cube } from "@phosphor-icons/react";`
+- **Global Configuration:**
+    - **Weight:** Default to `regular`. Use `duotone` for emphasis and `fill` for active/selected states.
+    - **Sizing:** Standardize on `size={24}` for general UI and `size={20}` or `size={16}` for dense lists/buttons.
+    - **Mirrored:** Enable `mirrored={true}` for RTL-sensitive icons like arrows if applicable.
+- **Consistency:** Every page must use this icon set exclusively to maintain visual harmony.

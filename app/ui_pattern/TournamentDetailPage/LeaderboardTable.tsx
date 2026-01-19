@@ -16,8 +16,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { X, User } from "lucide-react";
-import { Tournament } from "@/utils/tournament";
+import { XIcon, UserIcon, CaretRightIcon, ArrowLeftIcon } from "@phosphor-icons/react";
+import { Tournament, Match, Round } from "@/utils/tournament";
 
 interface PlayerStats {
   name: string;
@@ -43,6 +43,8 @@ interface LeaderboardTableProps {
 export default function LeaderboardTable({ tournament }: LeaderboardTableProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // State for detail view - when user clicks on a player row to see rounds
+  const [selectedPairPlayer, setSelectedPairPlayer] = useState<string | null>(null);
 
   // Calculate player statistics
   const playerStats = calculatePlayerStats(tournament);
@@ -52,9 +54,23 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
     ? calculatePairingStats(tournament, selectedPlayer)
     : [];
 
+  // Get rounds where selectedPlayer partnered with or played versus selectedPairPlayer
+  const pairRounds = selectedPlayer && selectedPairPlayer
+    ? getRoundsWithPair(tournament, selectedPlayer, selectedPairPlayer)
+    : { partnerRounds: [], versusRounds: [] };
+
   const handlePlayerClick = (playerName: string) => {
     setSelectedPlayer(playerName);
+    setSelectedPairPlayer(null); // Reset detail view
     setIsDrawerOpen(true);
+  };
+
+  const handlePairPlayerClick = (playerName: string) => {
+    setSelectedPairPlayer(playerName);
+  };
+
+  const handleBackToSummary = () => {
+    setSelectedPairPlayer(null);
   };
 
   return (
@@ -150,64 +166,130 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                 Player summary
               </DrawerTitle>
               <DrawerClose className="text-clx-text-secondary hover:text-clx-text-default">
-                <X className="h-6 w-6" />
+                <XIcon size={24} />
               </DrawerClose>
             </div>
           </DrawerHeader>
 
-          <div className="flex-1 overflow-auto p-4 space-y-6">
-            {/* Player Name Header */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
-                <User className="w-4 h-4 text-clx-primary" />
+          {/* Swap content based on selectedPairPlayer */}
+          {selectedPairPlayer ? (
+            // Detail View - Shows rounds with specific pair
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+              {/* Header with back button and player names */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBackToSummary}
+                  className="text-clx-text-secondary hover:text-clx-text-default"
+                  aria-label="Back to summary"
+                >
+                  <ArrowLeftIcon size={24} />
+                </button>
+                <div className="flex-1 flex items-center justify-center gap-2">
+                  <span className="text-lg font-bold text-clx-text-default">
+                    {selectedPlayer}
+                  </span>
+                  <span className="text-sm text-clx-text-default">&</span>
+                  <span className="text-lg font-bold text-clx-text-default">
+                    {selectedPairPlayer}
+                  </span>
+                </div>
               </div>
-              <span className="text-lg font-bold text-clx-text-default">
-                {selectedPlayer}
-              </span>
+
+              {/* Partner up section */}
+              {pairRounds.partnerRounds.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-clx-text-default">
+                    Partner up on
+                  </h3>
+                  <div className="space-y-2">
+                    {pairRounds.partnerRounds.map((roundInfo) => (
+                      <RoundCard
+                        key={`partner-${roundInfo.round.roundNumber}`}
+                        roundInfo={roundInfo}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Versus section */}
+              {pairRounds.versusRounds.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold text-clx-text-default">
+                    Versus on
+                  </h3>
+                  <div className="space-y-2">
+                    {pairRounds.versusRounds.map((roundInfo) => (
+                      <RoundCard
+                        key={`versus-${roundInfo.round.roundNumber}`}
+                        roundInfo={roundInfo}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          ) : (
+            // Summary View - Shows pairing stats table
+            <div className="flex-1 overflow-auto p-4 space-y-6">
+              {/* Player Name Header */}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
+                  <UserIcon size={16} className="text-clx-primary" />
+                </div>
+                <span className="text-lg font-bold text-clx-text-default">
+                  {selectedPlayer}
+                </span>
+              </div>
 
-            {/* Recap Section */}
-            <div className="space-y-2">
-              <h3 className="text-base font-semibold text-clx-text-default">
-                Recap for {tournament.rounds.length} rounds
-              </h3>
+              {/* Recap Section */}
+              <div className="space-y-2">
+                <h3 className="text-base font-semibold text-clx-text-default">
+                  Recap for {tournament.rounds.length} rounds
+                </h3>
 
-              {/* Pairing Stats Table */}
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-clx-border-subtle hover:bg-transparent">
-                    <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-4">
-                      Player
-                    </TableHead>
-                    <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
-                      Partner up
-                    </TableHead>
-                    <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
-                      Versus
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pairingStats.map((stat) => (
-                    <TableRow
-                      key={stat.playerName}
-                      className="border-b border-clx-border-subtle bg-white hover:bg-clx-bg-neutral-hover"
-                    >
-                      <TableCell className="py-4 px-4 text-sm font-medium text-clx-text-default">
-                        {stat.playerName}
-                      </TableCell>
-                      <TableCell className="py-4 px-2 text-sm text-clx-text-default">
-                        {stat.partnerCount > 0 ? `${stat.partnerCount}x` : "-"}
-                      </TableCell>
-                      <TableCell className="py-4 px-2 text-sm text-clx-text-default">
-                        {stat.versusCount > 0 ? `${stat.versusCount}x` : "-"}
-                      </TableCell>
+                {/* Pairing Stats Table */}
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-clx-border-subtle hover:bg-transparent">
+                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-4">
+                        Player
+                      </TableHead>
+                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[80px]">
+                        Partner up
+                      </TableHead>
+                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[80px]">
+                        Versus
+                      </TableHead>
+                      <TableHead className="w-8" />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {pairingStats.map((stat) => (
+                      <TableRow
+                        key={stat.playerName}
+                        className="border-b border-clx-border-subtle bg-white hover:bg-clx-bg-neutral-hover cursor-pointer"
+                        onClick={() => handlePairPlayerClick(stat.playerName)}
+                      >
+                        <TableCell className="py-4 px-4 text-sm font-medium text-clx-text-default">
+                          {stat.playerName}
+                        </TableCell>
+                        <TableCell className="py-4 px-2 text-sm text-clx-text-default">
+                          {stat.partnerCount > 0 ? `${stat.partnerCount}x` : "-"}
+                        </TableCell>
+                        <TableCell className="py-4 px-2 text-sm text-clx-text-default">
+                          {stat.versusCount > 0 ? `${stat.versusCount}x` : "-"}
+                        </TableCell>
+                        <TableCell className="py-4 px-0">
+                          <CaretRightIcon size={20} className="text-clx-text-secondary" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-          </div>
+          )}
         </DrawerContent>
       </Drawer>
     </div>
@@ -368,5 +450,154 @@ function calculatePairingStats(
   // Return sorted by player name
   return Object.values(stats).sort((a, b) =>
     a.playerName.localeCompare(b.playerName)
+  );
+}
+
+// Interface for round info with match details
+interface RoundInfo {
+  round: Round;
+  match: Match;
+}
+
+// Interface for pair rounds result
+interface PairRoundsResult {
+  partnerRounds: RoundInfo[];
+  versusRounds: RoundInfo[];
+}
+
+// Get rounds where two players partnered or played versus each other
+function getRoundsWithPair(
+  tournament: Tournament,
+  player1: string,
+  player2: string
+): PairRoundsResult {
+  const partnerRounds: RoundInfo[] = [];
+  const versusRounds: RoundInfo[] = [];
+
+  tournament.rounds.forEach((round) => {
+    round.matches.forEach((match) => {
+      const teamAPlayers = match.teamA;
+      const teamBPlayers = match.teamB;
+
+      // Check if both players are in Team A (partners)
+      if (teamAPlayers.includes(player1) && teamAPlayers.includes(player2)) {
+        partnerRounds.push({ round, match });
+      }
+      // Check if both players are in Team B (partners)
+      else if (teamBPlayers.includes(player1) && teamBPlayers.includes(player2)) {
+        partnerRounds.push({ round, match });
+      }
+      // Check if one is in Team A and other in Team B (versus)
+      else if (
+        (teamAPlayers.includes(player1) && teamBPlayers.includes(player2)) ||
+        (teamAPlayers.includes(player2) && teamBPlayers.includes(player1))
+      ) {
+        versusRounds.push({ round, match });
+      }
+    });
+  });
+
+  return { partnerRounds, versusRounds };
+}
+
+// RoundCard component props
+interface RoundCardProps {
+  roundInfo: RoundInfo;
+}
+
+// RoundCard component to display a single round's match
+function RoundCard({ roundInfo }: RoundCardProps) {
+  const { round, match } = roundInfo;
+  const scoreA = match.scoreA ?? 0;
+  const scoreB = match.scoreB ?? 0;
+  const isCompleted = match.isCompleted;
+
+  // Determine winner for score styling
+  const teamAWins = scoreA > scoreB;
+  const teamBWins = scoreB > scoreA;
+
+  // Determine text color for player names based on round completion and win/loss
+  const getPlayerTextClass = (isTeamA: boolean) => {
+    // If round is not completed, all players get dark text
+    if (!isCompleted) {
+      return "text-clx-text-default";
+    }
+
+    // If round is completed, winners get dark text, losers get subtle text
+    const isWinner = isTeamA ? teamAWins : teamBWins;
+    const isTie = scoreA === scoreB;
+
+    // In case of tie, all players get dark text
+    if (isTie) {
+      return "text-clx-text-default";
+    }
+
+    return isWinner ? "text-clx-text-default" : "text-clx-text-disabled";
+  };
+
+  // Format score with leading zero
+  const formatScore = (score: number) => score.toString().padStart(2, '0');
+
+  return (
+    <div className="bg-clx-bg-neutral-bold rounded-lg px-6 py-3 space-y-3">
+      {/* Round number */}
+      <p className="text-sm font-bold text-clx-text-default text-center">
+        Round {round.roundNumber}
+      </p>
+
+      {/* Match content */}
+      <div className="flex items-center justify-between">
+        {/* Team A */}
+        <div className="flex flex-col gap-2 w-[104px]">
+          {match.teamA.map((player, idx) => (
+            <span
+              key={idx}
+              className={`text-sm ${getPlayerTextClass(true)}`}
+            >
+              {player}
+            </span>
+          ))}
+        </div>
+
+        {/* Score */}
+        <div className="flex items-center gap-1.5 font-score">
+          <div
+            className={`w-9 h-8 rounded-md flex items-center justify-center ${
+              isCompleted && teamAWins
+                ? "bg-clx-bg-success text-white"
+                : "bg-clx-bg-dark text-white px-2 py-1.5 rounded-md text-base font-medium"
+            }`}
+          >
+            <span className="bg-clx-bg-dark text-white px-2 py-1.5 rounded-md text-base font-medium">
+              {formatScore(scoreA)}
+            </span>
+          </div>
+          <span className="text-clx-text-placeholder font-semibold">:</span>
+          <div
+            className={`w-9 h-8 rounded-md flex items-center justify-center ${
+              isCompleted && teamBWins
+                ? "bg-clx-bg-success text-white"
+                : "bg-clx-bg-dark text-white px-2 py-1.5 rounded-md text-base font-medium"
+            }`}
+          >
+            <span className="">
+              {formatScore(scoreB)}
+            </span>
+          </div>
+        </div>
+
+        {/* Team B */}
+        <div className="flex flex-col gap-2 w-[104px] items-end">
+          {match.teamB.map((player, idx) => (
+            <span
+              key={idx}
+              className={`text-sm ${getPlayerTextClass(false)}`}
+            >
+              {player}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
