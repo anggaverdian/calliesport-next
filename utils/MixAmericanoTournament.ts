@@ -1,0 +1,552 @@
+// Mix Americano Tournament Utilities
+// For 8 players (4 Men, 4 Women) with perfect matrix pairing
+
+import { TournamentsArraySchema, sanitizeString, sanitizeStringArray } from "./form-schemas";
+
+// ============================================================================
+// TYPES AND INTERFACES
+// ============================================================================
+
+export type Gender = "male" | "female";
+
+export interface MixPlayer {
+  name: string;
+  gender: Gender;
+}
+
+export interface MixTournament {
+  id: string;
+  name: string;
+  teamType: "mix";
+  pointType: string;
+  players: string[];
+  playerGenders: Record<string, Gender>; // Maps player name to gender
+  rounds: MixRound[];
+  createdAt: string;
+  hasExtended?: boolean;
+  isEnded?: boolean;
+}
+
+export interface MixMatch {
+  id: string;
+  teamA: string[]; // [man, woman]
+  teamB: string[]; // [man, woman]
+  scoreA: number | null;
+  scoreB: number | null;
+  isCompleted: boolean;
+}
+
+export interface MixRound {
+  roundNumber: number;
+  matches: MixMatch[];
+  restingPlayers: string[];
+}
+
+// ============================================================================
+// PERFECT MATRIX FOR 24 ROUNDS (8 PLAYERS: 4M, 4W)
+// Each match has a mixed pair (1 man + 1 woman) on each team
+// ============================================================================
+
+interface ScheduleEntry {
+  round: number;
+  home: { m: string; w: string };
+  away: { m: string; w: string };
+}
+
+const SCHEDULE_DATA: ScheduleEntry[] = [
+  { round: 1, home: { m: "M4", w: "W4" }, away: { m: "M1", w: "W1" } },
+  { round: 2, home: { m: "M3", w: "W2" }, away: { m: "M2", w: "W3" } },
+  { round: 3, home: { m: "M1", w: "W2" }, away: { m: "M4", w: "W1" } },
+  { round: 4, home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W4" } },
+  { round: 5, home: { m: "M2", w: "W1" }, away: { m: "M4", w: "W3" } },
+  { round: 6, home: { m: "M3", w: "W3" }, away: { m: "M1", w: "W4" } },
+  { round: 7, home: { m: "M3", w: "W2" }, away: { m: "M2", w: "W1" } },
+  { round: 8, home: { m: "M4", w: "W2" }, away: { m: "M1", w: "W3" } },
+  { round: 9, home: { m: "M2", w: "W4" }, away: { m: "M3", w: "W1" } },
+  { round: 10, home: { m: "M4", w: "W3" }, away: { m: "M3", w: "W2" } },
+  { round: 11, home: { m: "M2", w: "W1" }, away: { m: "M1", w: "W3" } },
+  { round: 12, home: { m: "M3", w: "W3" }, away: { m: "M4", w: "W4" } },
+  { round: 13, home: { m: "M2", w: "W4" }, away: { m: "M1", w: "W2" } },
+  { round: 14, home: { m: "M3", w: "W3" }, away: { m: "M1", w: "W1" } },
+  { round: 15, home: { m: "M2", w: "W2" }, away: { m: "M4", w: "W3" } },
+  { round: 16, home: { m: "M3", w: "W4" }, away: { m: "M4", w: "W1" } },
+  { round: 17, home: { m: "M2", w: "W3" }, away: { m: "M1", w: "W1" } },
+  { round: 18, home: { m: "M3", w: "W1" }, away: { m: "M4", w: "W2" } },
+  { round: 19, home: { m: "M1", w: "W4" }, away: { m: "M2", w: "W2" } },
+  { round: 20, home: { m: "M4", w: "W4" }, away: { m: "M2", w: "W3" } },
+  { round: 21, home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W1" } },
+  { round: 22, home: { m: "M4", w: "W1" }, away: { m: "M2", w: "W4" } },
+  { round: 23, home: { m: "M3", w: "W4" }, away: { m: "M1", w: "W3" } },
+  { round: 24, home: { m: "M1", w: "W4" }, away: { m: "M4", w: "W2" } }
+];
+
+// Constants
+export const MIX_AMERICANO_REQUIRED_PLAYERS = 8;
+export const MIX_AMERICANO_REQUIRED_MEN = 4;
+export const MIX_AMERICANO_REQUIRED_WOMEN = 4;
+export const MIX_AMERICANO_TOTAL_ROUNDS = 24;
+
+// Local storage key
+const STORAGE_KEY = "calliesport_tournaments";
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+// Generate unique ID
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
+// Shuffle array randomly (Fisher-Yates algorithm)
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const randomIndex = Math.floor(Math.random() * (i + 1));
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[randomIndex];
+    shuffled[randomIndex] = temp;
+  }
+  return shuffled;
+}
+
+// ============================================================================
+// TOURNAMENT GENERATION
+// ============================================================================
+
+/**
+ * Validates that the players list has exactly 4 men and 4 women
+ */
+export function validateMixAmericanoPlayers(
+  players: MixPlayer[]
+): { valid: boolean; error?: string } {
+  if (players.length !== MIX_AMERICANO_REQUIRED_PLAYERS) {
+    return {
+      valid: false,
+      error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_PLAYERS} players`,
+    };
+  }
+
+  const men = players.filter((p) => p.gender === "male");
+  const women = players.filter((p) => p.gender === "female");
+
+  if (men.length !== MIX_AMERICANO_REQUIRED_MEN) {
+    return {
+      valid: false,
+      error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_MEN} men (currently ${men.length})`,
+    };
+  }
+
+  if (women.length !== MIX_AMERICANO_REQUIRED_WOMEN) {
+    return {
+      valid: false,
+      error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_WOMEN} women (currently ${women.length})`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Generate tournament rounds for Mix Americano using the perfect matrix
+ * Players are randomly assigned to M1-M4 and W1-W4 positions
+ */
+export function generateMixAmericanoRounds(players: MixPlayer[]): MixRound[] {
+  const validation = validateMixAmericanoPlayers(players);
+  if (!validation.valid) {
+    console.error(validation.error);
+    return [];
+  }
+
+  // Separate and shuffle men and women
+  const men = shuffleArray(players.filter((p) => p.gender === "male"));
+  const women = shuffleArray(players.filter((p) => p.gender === "female"));
+
+  // Create mapping from M1-M4 and W1-W4 to actual player names
+  const playerMap: Record<string, string> = {
+    M1: men[0].name,
+    M2: men[1].name,
+    M3: men[2].name,
+    M4: men[3].name,
+    W1: women[0].name,
+    W2: women[1].name,
+    W3: women[2].name,
+    W4: women[3].name,
+  };
+
+  // Generate rounds from schedule
+  const rounds: MixRound[] = [];
+
+  for (const entry of SCHEDULE_DATA) {
+    const match: MixMatch = {
+      id: generateId(),
+      teamA: [playerMap[entry.home.m], playerMap[entry.home.w]],
+      teamB: [playerMap[entry.away.m], playerMap[entry.away.w]],
+      scoreA: null,
+      scoreB: null,
+      isCompleted: false,
+    };
+
+    // In Mix Americano with 8 players, all players play every round (no resting)
+    // But we keep the restingPlayers array for compatibility
+    rounds.push({
+      roundNumber: entry.round,
+      matches: [match],
+      restingPlayers: [],
+    });
+  }
+
+  return rounds;
+}
+
+/**
+ * Calculate total rounds for Mix Americano
+ */
+export function calculateMixAmericanoRounds(): number {
+  return MIX_AMERICANO_TOTAL_ROUNDS;
+}
+
+// ============================================================================
+// TOURNAMENT CRUD OPERATIONS
+// ============================================================================
+
+/**
+ * Get all tournaments from localStorage
+ */
+export function getMixTournaments(): MixTournament[] {
+  if (typeof window === "undefined") return [];
+
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return [];
+
+  try {
+    const parsed = JSON.parse(stored);
+    // Filter only mix tournaments
+    return parsed.filter((t: MixTournament) => t.teamType === "mix");
+  } catch (error) {
+    console.error("Failed to parse tournaments from localStorage:", error);
+    return [];
+  }
+}
+
+/**
+ * Get Mix tournament by ID
+ */
+export function getMixTournamentById(id: string): MixTournament | null {
+  if (typeof window === "undefined") return null;
+
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return null;
+
+  try {
+    const parsed = JSON.parse(stored);
+    const tournament = parsed.find(
+      (t: MixTournament) => t.id === id && t.teamType === "mix"
+    );
+    return tournament || null;
+  } catch (error) {
+    console.error("Failed to parse tournaments from localStorage:", error);
+    return null;
+  }
+}
+
+/**
+ * Save a new Mix Americano tournament
+ */
+export function saveMixAmericanoTournament(tournament: {
+  name: string;
+  pointType: string;
+  players: MixPlayer[];
+}): MixTournament | null {
+  const validation = validateMixAmericanoPlayers(tournament.players);
+  if (!validation.valid) {
+    console.error(validation.error);
+    return null;
+  }
+
+  // Sanitize inputs
+  const sanitizedName = sanitizeString(tournament.name);
+  const sanitizedPlayers = tournament.players.map((p) => ({
+    name: sanitizeString(p.name),
+    gender: p.gender,
+  }));
+
+  // Create player genders map
+  const playerGenders: Record<string, Gender> = {};
+  sanitizedPlayers.forEach((p) => {
+    playerGenders[p.name] = p.gender;
+  });
+
+  // Generate rounds
+  const rounds = generateMixAmericanoRounds(sanitizedPlayers);
+
+  const newTournament: MixTournament = {
+    id: generateId(),
+    name: sanitizedName,
+    teamType: "mix",
+    pointType: tournament.pointType,
+    players: sanitizedPlayers.map((p) => p.name),
+    playerGenders,
+    rounds,
+    createdAt: new Date().toISOString(),
+    hasExtended: false,
+    isEnded: false,
+  };
+
+  // Get existing tournaments and add new one
+  const stored = localStorage.getItem(STORAGE_KEY);
+  const tournaments = stored ? JSON.parse(stored) : [];
+  tournaments.push(newTournament);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments));
+
+  return newTournament;
+}
+
+/**
+ * Update a Mix Americano tournament
+ */
+export function updateMixTournament(tournament: MixTournament): void {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return;
+
+  try {
+    const tournaments = JSON.parse(stored);
+    const index = tournaments.findIndex(
+      (t: MixTournament) => t.id === tournament.id
+    );
+
+    if (index !== -1) {
+      tournaments[index] = tournament;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tournaments));
+    }
+  } catch (error) {
+    console.error("Failed to update tournament:", error);
+  }
+}
+
+/**
+ * Update match score for Mix Americano
+ */
+export function updateMixMatchScore(
+  tournamentId: string,
+  roundNumber: number,
+  matchId: string,
+  scoreA: number | null,
+  scoreB: number | null
+): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  const round = tournament.rounds.find((r) => r.roundNumber === roundNumber);
+  if (!round) return null;
+
+  const match = round.matches.find((m) => m.id === matchId);
+  if (!match) return null;
+
+  match.scoreA = scoreA;
+  match.scoreB = scoreB;
+  match.isCompleted = scoreA !== null && scoreB !== null;
+
+  updateMixTournament(tournament);
+  return tournament;
+}
+
+/**
+ * End a Mix Americano tournament
+ */
+export function endMixTournament(tournamentId: string): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+  if (tournament.isEnded) return null;
+
+  tournament.isEnded = true;
+  updateMixTournament(tournament);
+  return tournament;
+}
+
+/**
+ * Check if Mix Americano team type is supported
+ */
+export function isMixAmericanoSupported(): boolean {
+  return true;
+}
+
+/**
+ * Get player gender from tournament
+ */
+export function getPlayerGender(
+  tournament: MixTournament,
+  playerName: string
+): Gender | undefined {
+  return tournament.playerGenders[playerName];
+}
+
+/**
+ * Count players by gender
+ */
+export function countPlayersByGender(players: MixPlayer[]): {
+  men: number;
+  women: number;
+} {
+  return {
+    men: players.filter((p) => p.gender === "male").length,
+    women: players.filter((p) => p.gender === "female").length,
+  };
+}
+
+// ============================================================================
+// REGENERATE TOURNAMENT WITH FIRST MATCH
+// ============================================================================
+
+/**
+ * Generate Mix Americano rounds with a specific first match lineup
+ * The first match must have mixed pairs (1 man + 1 woman per team)
+ */
+export function generateMixAmericanoRoundsWithFirstMatch(
+  players: MixPlayer[],
+  teamA: [string, string], // [man, woman] or [woman, man]
+  teamB: [string, string]  // [man, woman] or [woman, man]
+): MixRound[] {
+  const validation = validateMixAmericanoPlayers(players);
+  if (!validation.valid) {
+    console.error(validation.error);
+    return [];
+  }
+
+  // Separate men and women
+  const men = players.filter((p) => p.gender === "male");
+  const women = players.filter((p) => p.gender === "female");
+
+  // Create a map of player name to gender for quick lookup
+  const playerGenderMap: Record<string, Gender> = {};
+  players.forEach((p) => {
+    playerGenderMap[p.name] = p.gender;
+  });
+
+  // Identify which players from teamA and teamB are men/women
+  const teamAMan = teamA.find((p) => playerGenderMap[p] === "male");
+  const teamAWoman = teamA.find((p) => playerGenderMap[p] === "female");
+  const teamBMan = teamB.find((p) => playerGenderMap[p] === "male");
+  const teamBWoman = teamB.find((p) => playerGenderMap[p] === "female");
+
+  // Validate that each team has exactly 1 man and 1 woman
+  if (!teamAMan || !teamAWoman || !teamBMan || !teamBWoman) {
+    console.error("Each team must have exactly 1 man and 1 woman");
+    return [];
+  }
+
+  // Get the first round entry to dynamically determine which template positions to use
+  const firstRound = SCHEDULE_DATA[0];
+
+  // Build the player mapping dynamically based on the ACTUAL first round in SCHEDULE_DATA
+  // Team A (home) positions from first round
+  const homeManPosition = firstRound.home.m;    // e.g., "M3"
+  const homeWomanPosition = firstRound.home.w;  // e.g., "W3"
+  // Team B (away) positions from first round
+  const awayManPosition = firstRound.away.m;    // e.g., "M1"
+  const awayWomanPosition = firstRound.away.w;  // e.g., "W4"
+
+  // Get remaining men and women not in the first match
+  const remainingMen = men
+    .filter((p) => p.name !== teamAMan && p.name !== teamBMan)
+    .map((p) => p.name);
+  const remainingWomen = women
+    .filter((p) => p.name !== teamAWoman && p.name !== teamBWoman)
+    .map((p) => p.name);
+
+  // Shuffle remaining players for randomization
+  const shuffledRemainingMen = shuffleArray(remainingMen);
+  const shuffledRemainingWomen = shuffleArray(remainingWomen);
+
+  // Find which M positions are NOT used in the first round (for remaining men)
+  const allMenPositions = ["M1", "M2", "M3", "M4"];
+  const usedMenPositions = [homeManPosition, awayManPosition];
+  const unusedMenPositions = allMenPositions.filter(
+    (pos) => !usedMenPositions.includes(pos)
+  );
+
+  // Find which W positions are NOT used in the first round (for remaining women)
+  const allWomenPositions = ["W1", "W2", "W3", "W4"];
+  const usedWomenPositions = [homeWomanPosition, awayWomanPosition];
+  const unusedWomenPositions = allWomenPositions.filter(
+    (pos) => !usedWomenPositions.includes(pos)
+  );
+
+  // Create mapping from M1-M4 and W1-W4 to actual player names
+  const playerMap: Record<string, string> = {
+    // Map selected players to their positions based on first round
+    [homeManPosition]: teamAMan,      // Team A man (home position in round 1)
+    [homeWomanPosition]: teamAWoman,  // Team A woman (home position in round 1)
+    [awayManPosition]: teamBMan,      // Team B man (away position in round 1)
+    [awayWomanPosition]: teamBWoman,  // Team B woman (away position in round 1)
+    // Map remaining players to unused positions
+    [unusedMenPositions[0]]: shuffledRemainingMen[0],
+    [unusedMenPositions[1]]: shuffledRemainingMen[1],
+    [unusedWomenPositions[0]]: shuffledRemainingWomen[0],
+    [unusedWomenPositions[1]]: shuffledRemainingWomen[1],
+  };
+
+  // Generate rounds from schedule
+  const rounds: MixRound[] = [];
+
+  for (const entry of SCHEDULE_DATA) {
+    const match: MixMatch = {
+      id: generateId(),
+      teamA: [playerMap[entry.home.m], playerMap[entry.home.w]],
+      teamB: [playerMap[entry.away.m], playerMap[entry.away.w]],
+      scoreA: null,
+      scoreB: null,
+      isCompleted: false,
+    };
+
+    rounds.push({
+      roundNumber: entry.round,
+      matches: [match],
+      restingPlayers: [],
+    });
+  }
+
+  return rounds;
+}
+
+/**
+ * Regenerate Mix Americano tournament with a specific first match lineup
+ * This allows users to set who plays in round 1
+ */
+export function regenerateMixAmericanoTournamentWithFirstMatch(
+  tournamentId: string,
+  teamA: [string, string],
+  teamB: [string, string]
+): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Build MixPlayer array from tournament data
+  const players: MixPlayer[] = tournament.players.map((name) => ({
+    name,
+    gender: tournament.playerGenders[name],
+  }));
+
+  // Generate new rounds with the specified first match
+  const newRounds = generateMixAmericanoRoundsWithFirstMatch(
+    players,
+    teamA,
+    teamB
+  );
+
+  if (newRounds.length === 0) {
+    console.error("Failed to generate rounds for Mix Americano");
+    return null;
+  }
+
+  // Reset tournament state
+  tournament.rounds = newRounds;
+  tournament.hasExtended = false;
+  tournament.isEnded = false;
+
+  updateMixTournament(tournament);
+  return tournament;
+}

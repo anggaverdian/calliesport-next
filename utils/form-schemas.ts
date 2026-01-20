@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+// Player with gender for Mix Americano
+export const MixPlayerSchema = z.object({
+  name: z.string().min(1, "Player name is required"),
+  gender: z.enum(["male", "female"]),
+});
+
+export type MixPlayerFormData = z.infer<typeof MixPlayerSchema>;
+
 export const createTournamentSchema = z.object({
   tournamentName: z
     .string()
@@ -11,6 +19,10 @@ export const createTournamentSchema = z.object({
     .array(z.string())
     .min(4, "Add at least 4 players")
     .max(10, "Maximum 10 players allowed"),
+  // Mix Americano specific: player genders
+  mixPlayers: z
+    .array(MixPlayerSchema)
+    .optional(),
 });
 
 export type CreateTournamentFormData = z.infer<typeof createTournamentSchema>;
@@ -41,6 +53,7 @@ const TournamentSchema = z.object({
   teamType: z.enum(["standard", "mix", "team", "mexicano"]),
   pointType: z.string(),
   players: z.array(z.string()),
+  playerGenders: z.record(z.string(), z.enum(["male", "female"])).optional(), // For Mix Americano
   rounds: z.array(RoundSchema),
   createdAt: z.string(),
   hasExtended: z.boolean().optional(),

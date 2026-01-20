@@ -31,6 +31,8 @@ import {
   teamTypeNames,
 } from "@/utils/tournament";
 import { toast } from "sonner";
+import { GenderMale, GenderFemale } from "@phosphor-icons/react";
+import { MIX_AMERICANO_TOTAL_ROUNDS } from "@/utils/MixAmericanoTournament";
 
 export default function TournamentDetailPage() {
   const params = useParams();
@@ -192,8 +194,14 @@ export default function TournamentDetailPage() {
 
   const isRoundCompleted = currentRoundData?.matches.every(m => m.isCompleted) ?? false;
 
+  // Check if this is a Mix Americano tournament
+  const isMixAmericano = tournament.teamType === "mix";
+
   // Calculate initial rounds count (set 1)
-  const initialRoundsCount = calculateRounds(tournament.players.length);
+  // For Mix Americano, use the fixed 24 rounds
+  const initialRoundsCount = isMixAmericano
+    ? MIX_AMERICANO_TOTAL_ROUNDS
+    : calculateRounds(tournament.players.length);
 
   // Check if ALL initial rounds (set 1) are completed
   const set1Rounds = tournament.rounds.slice(0, initialRoundsCount);
@@ -231,7 +239,20 @@ export default function TournamentDetailPage() {
       return "completeTournament";
     }
 
-    // Set 2 exists
+    // Mix Americano: No extend feature, only end game after all 24 rounds
+    if (isMixAmericano) {
+      // All rounds completed - show end game banner
+      if (allRoundsCompleted) {
+        return "endGame";
+      }
+      // Last round is inputted but there are skipped rounds - show warning banner
+      if (isLastRoundInputted && !allRoundsCompleted) {
+        return "warning";
+      }
+      return null;
+    }
+
+    // Standard Americano: Set 2 exists
     if (tournament.hasExtended) {
       // All rounds completed - show end game banner
       if (allRoundsCompleted) {
@@ -368,14 +389,28 @@ export default function TournamentDetailPage() {
               />
 
               {/* Resting players */}
-              {currentRoundData.restingPlayers.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-sm">
-                  <span className="font-semibold text-clx-text-default">Rest:</span>
-                  <span className="text-clx-text-secondary">
-                    {currentRoundData.restingPlayers.join(", ")}
-                  </span>
-                </div>
-              )}
+              {(() => {
+                // For Mix Americano, calculate resting players from match data
+                // since restingPlayers array is always empty
+                let restingPlayers = currentRoundData.restingPlayers;
+                if (isMixAmericano && restingPlayers.length === 0) {
+                  const playingPlayers = new Set([
+                    ...currentRoundData.matches[0].teamA,
+                    ...currentRoundData.matches[0].teamB,
+                  ]);
+                  restingPlayers = tournament.players.filter(
+                    (player) => !playingPlayers.has(player)
+                  );
+                }
+                return restingPlayers.length > 0 ? (
+                  <div className="flex items-center justify-center gap-1.5 text-sm">
+                    <span className="font-semibold text-clx-text-default">Rest:</span>
+                    <span className="text-clx-text-secondary">
+                      {restingPlayers.join(", ")}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
             </div>
           )}
         </div>
@@ -451,6 +486,16 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
     r.matches.every(m => m.isCompleted)
   ).length;
 
+  const isMixAmericano = tournament.teamType === "mix";
+
+  // For Mix Americano, separate players by gender
+  const menPlayers = isMixAmericano && tournament.playerGenders
+    ? tournament.players.filter(p => tournament.playerGenders?.[p] === "male")
+    : [];
+  const womenPlayers = isMixAmericano && tournament.playerGenders
+    ? tournament.players.filter(p => tournament.playerGenders?.[p] === "female")
+    : [];
+
   return (
     <div className="space-y-4">
       <div className="bg-white px-1 space-y-3 border-b-1 pb-6">
@@ -459,6 +504,10 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
           <div className="flex justify-between text-sm">
             <span className="text-clx-text-secondary">Name</span>
             <span className="text-clx-text-default font-medium">{tournament.name}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-clx-text-secondary">Game Type</span>
+            <span className="text-clx-text-default font-medium">{teamTypeNames[tournament.teamType]}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-clx-text-secondary">Total Players</span>
@@ -488,16 +537,63 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
           <h3 className="font-semibold text-clx-text-default">Players</h3>
           <span className="text-sm">Total player: {tournament.players.length}</span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {tournament.players.map((player, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
-            >
-              {player}
-            </span>
-          ))}
-        </div>
+
+        {/* Mix Americano: Show players grouped by gender */}
+        {isMixAmericano && tournament.playerGenders ? (
+          <div className="space-y-4">
+            {/* Men section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="bg-blue-50 px-2 py-1 rounded">
+                  <GenderMale size={16} className="text-clx-text-accent" />
+                </div>
+                <span className="text-sm text-clx-text-default">Men ({menPlayers.length})</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {menPlayers.map((player, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
+                  >
+                    {player}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Women section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="bg-red-50 px-2 py-1 rounded">
+                  <GenderFemale size={16} className="text-red-500" />
+                </div>
+                <span className="text-sm text-clx-text-default">Women ({womenPlayers.length})</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {womenPlayers.map((player, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
+                  >
+                    {player}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Standard Americano: Show all players */
+          <div className="flex flex-wrap gap-2">
+            {tournament.players.map((player, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
+              >
+                {player}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

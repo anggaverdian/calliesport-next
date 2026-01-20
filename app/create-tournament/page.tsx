@@ -17,7 +17,19 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { PlusIcon, XIcon, PencilSimpleIcon, MinusCircleIcon } from "@phosphor-icons/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { PlusIcon, XIcon, DotsThreeIcon, PencilSimpleIcon, GenderMale, GenderFemale } from "@phosphor-icons/react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -26,14 +38,15 @@ import {
   FieldError,
   FieldGroup,
 } from "@/components/ui/field";
-import { createTournamentSchema, type CreateTournamentFormData } from "@/utils/form-schemas";
+import { createTournamentSchema, type CreateTournamentFormData, type MixPlayerFormData } from "@/utils/form-schemas";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // SVG imports for team type icons
 import thunderIcon from "../../public/thunder.svg";
 import chartIcon from "../../public/charts.svg";
 import upIcon from "../../public/Up.svg";
-import { saveTournament, TeamType } from "@/utils/tournament";
+import { saveTournament, TeamType, Gender } from "@/utils/tournament";
+import { saveMixAmericanoTournament, MIX_AMERICANO_REQUIRED_PLAYERS, MIX_AMERICANO_REQUIRED_MEN, MIX_AMERICANO_REQUIRED_WOMEN } from "@/utils/MixAmericanoTournament";
 
 // Team type options with descriptions matching Figma design
 const teamTypes = [
@@ -65,11 +78,25 @@ const pointOptions = [
   { id: "best5", label: "Best of 5" },
 ];
 
+// Mix Americano player type
+interface MixPlayer {
+  name: string;
+  gender: Gender;
+}
+
 export default function CreateTournament() {
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [playerInput, setPlayerInput] = useState("");
   const [playerInputError, setPlayerInputError] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null);
+  const [editingPlayerName, setEditingPlayerName] = useState("");
+  const [openPopoverIndex, setOpenPopoverIndex] = useState<number | null>(null);
+
+  // Mix Americano specific state - players with gender
+  const [mixPlayers, setMixPlayers] = useState<MixPlayer[]>([]);
+  const [mixPlayerValidationError, setMixPlayerValidationError] = useState("");
 
   const {
     control,
@@ -88,17 +115,74 @@ export default function CreateTournament() {
   });
 
   const players = watch("players");
+  const teamType = watch("teamType");
+  const isMixAmericano = teamType === "mix";
+
+  // Calculate gender counts for Mix Americano
+  const menCount = mixPlayers.filter(p => p.gender === "male").length;
+  const womenCount = mixPlayers.filter(p => p.gender === "female").length;
+
+  // Validate Mix Americano requirements
+  const validateMixAmericano = (): { valid: boolean; error?: string } => {
+    if (!isMixAmericano) return { valid: true };
+
+    if (mixPlayers.length !== MIX_AMERICANO_REQUIRED_PLAYERS) {
+      return {
+        valid: false,
+        error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_PLAYERS} players (currently ${mixPlayers.length})`,
+      };
+    }
+
+    if (menCount !== MIX_AMERICANO_REQUIRED_MEN) {
+      return {
+        valid: false,
+        error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_MEN} men (currently ${menCount})`,
+      };
+    }
+
+    if (womenCount !== MIX_AMERICANO_REQUIRED_WOMEN) {
+      return {
+        valid: false,
+        error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_WOMEN} women (currently ${womenCount})`,
+      };
+    }
+
+    return { valid: true };
+  };
 
   const onSubmit = (data: CreateTournamentFormData) => {
-    // Save to localStorage
-    saveTournament({
-      name: data.tournamentName,
-      teamType: data.teamType as TeamType,
-      pointType: data.pointType,
-      players: data.players,
-    });
-    toast.success(`Tournament "${data.tournamentName}" created with ${data.players.length} players!`);
-    router.push("/");
+    if (isMixAmericano) {
+      // Validate Mix Americano requirements
+      const validation = validateMixAmericano();
+      if (!validation.valid) {
+        setMixPlayerValidationError(validation.error || "Invalid Mix Americano configuration");
+        return;
+      }
+
+      // Save Mix Americano tournament
+      const result = saveMixAmericanoTournament({
+        name: data.tournamentName,
+        pointType: data.pointType,
+        players: mixPlayers,
+      });
+
+      if (result) {
+        toast.success(`Tournament "${data.tournamentName}" created with ${mixPlayers.length} players!`);
+        router.push("/");
+      } else {
+        toast.error("Failed to create tournament");
+      }
+    } else {
+      // Save standard tournament
+      saveTournament({
+        name: data.tournamentName,
+        teamType: data.teamType as TeamType,
+        pointType: data.pointType,
+        players: data.players,
+      });
+      toast.success(`Tournament "${data.tournamentName}" created with ${data.players.length} players!`);
+      router.push("/");
+    }
   };
 
   const handleCancel = () => {
@@ -109,70 +193,176 @@ export default function CreateTournament() {
     if (!playerInput.trim()) return;
 
     // Split by comma or newline, trim whitespace, filter empty strings
-    const newPlayers = playerInput
+    const newPlayerNames = playerInput
       .split(/[,\n]/)
       .map((name) => name.trim())
       .filter((name) => name.length > 0);
 
-    if (newPlayers.length > 0) {
+    if (newPlayerNames.length > 0) {
       // Check for duplicates within the new input
-      const lowerCaseNewPlayers = newPlayers.map(name => name.toLowerCase());
+      const lowerCaseNewPlayers = newPlayerNames.map(name => name.toLowerCase());
       const uniqueNewPlayers = new Set(lowerCaseNewPlayers);
-      if (uniqueNewPlayers.size !== newPlayers.length) {
+      if (uniqueNewPlayers.size !== newPlayerNames.length) {
         setPlayerInputError("Duplicate names found in input. Each player must have a unique name.");
         return;
       }
 
-      // Check for duplicates with existing players
-      const existingLowerCase = players.map(name => name.toLowerCase());
-      const duplicates = newPlayers.filter(name => existingLowerCase.includes(name.toLowerCase()));
-      if (duplicates.length > 0) {
-        setPlayerInputError(`Player "${duplicates[0]}" already exists. Each player must have a unique name.`);
-        return;
+      if (isMixAmericano) {
+        // Mix Americano: Check max limit of 8
+        const totalPlayers = mixPlayers.length + newPlayerNames.length;
+        if (totalPlayers > MIX_AMERICANO_REQUIRED_PLAYERS) {
+          setPlayerInputError(`Mix Americano only available for ${MIX_AMERICANO_REQUIRED_PLAYERS} players. You already have (${mixPlayers.length} players).`);
+          return;
+        }
+
+        // Check for duplicates with existing players
+        const existingLowerCase = mixPlayers.map(p => p.name.toLowerCase());
+        const duplicates = newPlayerNames.filter(name => existingLowerCase.includes(name.toLowerCase()));
+        if (duplicates.length > 0) {
+          setPlayerInputError(`Player "${duplicates[0]}" already exists. Each player must have a unique name.`);
+          return;
+        }
+
+        // Add new players with default gender as male
+        const newMixPlayers: MixPlayer[] = newPlayerNames.map(name => ({
+          name,
+          gender: "male" as Gender,
+        }));
+
+        setMixPlayers([...mixPlayers, ...newMixPlayers]);
+        // Also update the form players array for form validation
+        setValue("players", [...mixPlayers.map(p => p.name), ...newPlayerNames], { shouldValidate: true });
+      } else {
+        // Standard Americano
+        // Check for duplicates with existing players
+        const existingLowerCase = players.map(name => name.toLowerCase());
+        const duplicates = newPlayerNames.filter(name => existingLowerCase.includes(name.toLowerCase()));
+        if (duplicates.length > 0) {
+          setPlayerInputError(`Player "${duplicates[0]}" already exists. Each player must have a unique name.`);
+          return;
+        }
+
+        // Clear error if validation passes
+        setPlayerInputError("");
+
+        const totalPlayers = players.length + newPlayerNames.length;
+
+        // Check if adding these players would exceed max limit
+        if (totalPlayers > 10) {
+          setPlayerInputError(`Maximum 10 players allowed. You already have (${players.length} players).`);
+          return;
+        }
+
+        setValue("players", [...players, ...newPlayerNames], { shouldValidate: true });
       }
 
-      // Clear error if validation passes
       setPlayerInputError("");
-
-      const totalPlayers = players.length + newPlayers.length;
-
-      // Check if adding these players would exceed max limit
-      if (totalPlayers > 10) {
-        setPlayerInputError(`Maximum 10 players allowed. You already have (${players.length} players).`);
-        return;
-      }
-
-      setValue("players", [...players, ...newPlayers], { shouldValidate: true });
+      setMixPlayerValidationError("");
       setPlayerInput("");
-      toast.success(`Added ${newPlayers.length} player(s)!`);
+      toast.success(`Added ${newPlayerNames.length} player(s)!`);
     }
   };
 
   const handleDeletePlayer = (index: number) => {
-    const playerName = players[index];
-    const updatedPlayers = players.filter((_, i) => i !== index);
-    setValue("players", updatedPlayers, { shouldValidate: true });
-    toast.success(playerName + " removed");
+    if (isMixAmericano) {
+      const playerName = mixPlayers[index].name;
+      const updatedMixPlayers = mixPlayers.filter((_, i) => i !== index);
+      setMixPlayers(updatedMixPlayers);
+      setValue("players", updatedMixPlayers.map(p => p.name), { shouldValidate: true });
+      toast.success(playerName + " removed");
+    } else {
+      const playerName = players[index];
+      const updatedPlayers = players.filter((_, i) => i !== index);
+      setValue("players", updatedPlayers, { shouldValidate: true });
+      toast.success(playerName + " removed");
+    }
+    setMixPlayerValidationError("");
   };
 
   const handleEditPlayer = (index: number) => {
-    const playerName = players[index];
-    const newName = prompt("Edit player name:", playerName);
-    if (newName && newName.trim() !== "") {
-      const trimmedName = newName.trim();
+    if (isMixAmericano) {
+      const player = mixPlayers[index];
+      setEditingPlayerIndex(index);
+      setEditingPlayerName(player.name);
+    } else {
+      const playerName = players[index];
+      setEditingPlayerIndex(index);
+      setEditingPlayerName(playerName);
+    }
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEditPlayer = () => {
+    if (editingPlayerIndex === null) return;
+
+    const trimmedName = editingPlayerName.trim();
+    if (!trimmedName) {
+      toast.error("Player name cannot be empty");
+      return;
+    }
+
+    if (isMixAmericano) {
       // Check if the new name already exists (excluding the current player)
-      const otherPlayers = players.filter((_, i) => i !== index);
+      const otherPlayers = mixPlayers.filter((_, i) => i !== editingPlayerIndex);
+      const isDuplicate = otherPlayers.some(p => p.name.toLowerCase() === trimmedName.toLowerCase());
+      if (isDuplicate) {
+        toast.error(`Player "${trimmedName}" already exists. Each player must have a unique name.`);
+        return;
+      }
+
+      const updatedMixPlayers = [...mixPlayers];
+      updatedMixPlayers[editingPlayerIndex] = {
+        ...updatedMixPlayers[editingPlayerIndex],
+        name: trimmedName,
+      };
+      setMixPlayers(updatedMixPlayers);
+      setValue("players", updatedMixPlayers.map(p => p.name), { shouldValidate: true });
+    } else {
+      // Check if the new name already exists (excluding the current player)
+      const otherPlayers = players.filter((_, i) => i !== editingPlayerIndex);
       const isDuplicate = otherPlayers.some(p => p.toLowerCase() === trimmedName.toLowerCase());
       if (isDuplicate) {
         toast.error(`Player "${trimmedName}" already exists. Each player must have a unique name.`);
         return;
       }
+
       const updatedPlayers = [...players];
-      updatedPlayers[index] = trimmedName;
+      updatedPlayers[editingPlayerIndex] = trimmedName;
       setValue("players", updatedPlayers, { shouldValidate: true });
-      toast.success("Player name updated");
+    }
+
+    toast.success("Player name updated");
+    setEditDialogOpen(false);
+    setEditingPlayerIndex(null);
+    setEditingPlayerName("");
+  };
+
+  // Toggle player gender (Mix Americano only)
+  const handleToggleGender = (index: number) => {
+    const updatedMixPlayers = [...mixPlayers];
+    updatedMixPlayers[index] = {
+      ...updatedMixPlayers[index],
+      gender: updatedMixPlayers[index].gender === "male" ? "female" : "male",
+    };
+    setMixPlayers(updatedMixPlayers);
+    setMixPlayerValidationError("");
+  };
+
+  // Reset players when switching team types
+  const handleTeamTypeChange = (newTeamType: string) => {
+    setValue("teamType", newTeamType);
+    // Clear players when switching between standard and mix
+    if ((newTeamType === "mix" && teamType !== "mix") || (newTeamType !== "mix" && teamType === "mix")) {
+      setValue("players", []);
+      setMixPlayers([]);
+      setPlayerInputError("");
+      setMixPlayerValidationError("");
     }
   };
+
+  // Get men and women players for display
+  const menPlayers = mixPlayers.filter(p => p.gender === "male");
+  const womenPlayers = mixPlayers.filter(p => p.gender === "female");
 
   return (
     <main className="w-auto min-h-screen">
@@ -181,7 +371,7 @@ export default function CreateTournament() {
       {/* Main content */}
       <div className="container">
         <form onSubmit={handleSubmit(onSubmit)}>
-          <FieldGroup className="h-screen">
+          <FieldGroup className="h-auto">
             <div className="flex-1 p-4 space-y-6">
               {/* Tournament name input */}
               <Field>
@@ -222,7 +412,10 @@ export default function CreateTournament() {
                     render={({ field }) => (
                       <RadioGroup
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleTeamTypeChange(value);
+                        }}
                         className="flex flex-col gap-2"
                       >
                         {teamTypes.map((team) => {
@@ -312,7 +505,7 @@ export default function CreateTournament() {
                     <div>
                       <p className="text-lg font-bold text-clx-text-default">Players</p>
                       <p className="text-sm text-clx-text-dark-subtle">
-                        <span className="text-xs">Total {players.length} players added</span>
+                        <span className="text-xs">Total {isMixAmericano ? mixPlayers.length : players.length} players added</span>
                       </p>
                     </div>
                     <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} modal={true}>
@@ -323,7 +516,7 @@ export default function CreateTournament() {
                           className="h-11 px-4! border-clx-border-textfield rounded-lg gap-2 text-base pl-3!"
                         >
                           {/* 1. Toggle the Icon */}
-                          {players.length > 0 ? (
+                          {(isMixAmericano ? mixPlayers.length : players.length) > 0 ? (
                             <PencilSimpleIcon size={16} className="text-clx-text-default w-auto! h-auto!" />
                           ) : (
                             <PlusIcon size={16} className="text-clx-text-default w-auto! h-auto!" />
@@ -331,7 +524,7 @@ export default function CreateTournament() {
 
                           {/* 2. Toggle the Text */}
                           <span className="font-bold text-clx-text-default">
-                            {players.length > 0 ? "Edit" : "Add"}
+                            {(isMixAmericano ? mixPlayers.length : players.length) > 0 ? "Edit" : "Add"}
                           </span>
                         </Button>
                       </DrawerTrigger>
@@ -398,41 +591,151 @@ export default function CreateTournament() {
                             <div className="flex items-center justify-between">
                               <p className="text-base font-semibold text-clx-text-default">Players list</p>
                               <p className="text-sm text-clx-text-secondary">
-                                Total: <span className="text-clx-text-default">{players.length} players</span>
+                                Total: <span className="text-clx-text-default">{isMixAmericano ? mixPlayers.length : players.length} players</span>
                               </p>
                             </div>
 
-                            {players.length === 0 ? (
+                            {/* Mix Americano: Show gender counts */}
+                            {isMixAmericano && mixPlayers.length > 0 && (
+                              <div className="flex gap-4 text-sm">
+                                <p>
+                                  <span className="text-clx-text-accent">Men</span>
+                                  <span className="text-clx-text-secondary">: </span>
+                                  <span className="text-clx-text-default">{menCount}</span>
+                                </p>
+                                <p>
+                                  <span className="text-red-500">Women</span>
+                                  <span className="text-clx-text-secondary">: </span>
+                                  <span className="text-clx-text-default">{womenCount}</span>
+                                </p>
+                              </div>
+                            )}
+
+                            {(isMixAmericano ? mixPlayers.length : players.length) === 0 ? (
                               <div className="py-20 text-center">
                                 <p className="text-sm text-clx-text-placeholder">No players added yet</p>
                               </div>
+                            ) : isMixAmericano ? (
+                              // Mix Americano player list with gender toggle
+                              <div className="flex flex-col gap-2">
+                                {mixPlayers.map((player, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center gap-3 h-12 px-4 py-2 bg-clx-bg-neutral-subtle rounded-md border-0"
+                                  >
+                                    <span className="text-sm text-clx-text-placeholder">{index + 1}.</span>
+                                    <span className="flex-1 text-sm font-semibold text-clx-text-default truncate">
+                                      {player.name}
+                                    </span>
+                                    {/* Gender toggle button */}
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      className="size-8 rounded-lg border-clx-border-default bg-white"
+                                      onClick={() => handleToggleGender(index)}
+                                    >
+                                      {player.gender === "male" ? (
+                                        <GenderMale size={20} weight="regular" className="text-clx-text-accent" />
+                                      ) : (
+                                        <GenderFemale size={20} weight="regular" className="text-red-500" />
+                                      )}
+                                    </Button>
+                                    <Popover
+                                      open={openPopoverIndex === index}
+                                      onOpenChange={(open) => setOpenPopoverIndex(open ? index : null)}
+                                    >
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className={`size-8 rounded-lg ${openPopoverIndex === index ? "bg-neutral-200" : "bg-transparent hover:bg-clx-bg-neutral-hover"}`}
+                                        >
+                                          <DotsThreeIcon size={24} weight="bold" className="text-clx-text-default w-auto! h-auto!" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent
+                                        align="end"
+                                        className="w-[104px] p-0 py-2 rounded-md shadow-lg border border-[#e1e0e0]"
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenPopoverIndex(null);
+                                            handleEditPlayer(index);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-sm text-clx-text-default hover:bg-clx-bg-neutral-subtle"
+                                        >
+                                          Edit name
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenPopoverIndex(null);
+                                            handleDeletePlayer(index);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-sm text-clx-text-danger hover:bg-clx-bg-neutral-subtle"
+                                        >
+                                          Remove
+                                        </button>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
+                                ))}
+                              </div>
                             ) : (
+                              // Standard Americano player list
                               <div className="flex flex-col gap-2">
                                 {players.map((player, index) => (
                                   <div
                                     key={index}
-                                    className="flex items-center gap-3 h-12 px-4 py-2 bg-clx-bg-neutral-bold rounded-md border-0"
+                                    className="flex items-center gap-3 h-12 px-4 py-2 bg-clx-bg-neutral-subtle rounded-md border-0"
                                   >
-                                    <span className="text-sm text-clx-text-default">{index + 1}.</span>
+                                    <span className="text-sm text-clx-text-placeholder">{index + 1}.</span>
                                     <span className="flex-1 text-sm font-semibold text-clx-text-default truncate">
                                       {player}
                                     </span>
-                                    <div className="flex items-center gap-4">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEditPlayer(index)}
-                                        className="text-clx-icon-default hover:text-clx-icon-accent"
+                                    <Popover
+                                      open={openPopoverIndex === index}
+                                      onOpenChange={(open) => setOpenPopoverIndex(open ? index : null)}
+                                    >
+                                      <PopoverTrigger asChild>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className={`size-8 rounded-lg ${openPopoverIndex === index ? "bg-neutral-200" : "bg-transparent hover:bg-clx-bg-neutral-hover"}`}
+                                        >
+                                          <DotsThreeIcon size={24} weight="bold" className="text-clx-text-default w-auto! h-auto!" />
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent
+                                        align="end"
+                                        className="w-[104px] p-0 py-2 rounded-md shadow-lg border border-[#e1e0e0]"
                                       >
-                                        <PencilSimpleIcon size={20} />
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDeletePlayer(index)}
-                                        className="text-clx-icon-error hover:text-red-700"
-                                      >
-                                        <MinusCircleIcon size={20} weight="fill" className="text-clx-icon-danger" />
-                                      </button>
-                                    </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenPopoverIndex(null);
+                                            handleEditPlayer(index);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-sm text-clx-text-default hover:bg-clx-bg-neutral-subtle"
+                                        >
+                                          Edit name
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenPopoverIndex(null);
+                                            handleDeletePlayer(index);
+                                          }}
+                                          className="w-full px-3 py-2 text-left text-sm text-clx-text-danger hover:bg-clx-bg-neutral-subtle"
+                                        >
+                                          Remove
+                                        </button>
+                                      </PopoverContent>
+                                    </Popover>
                                   </div>
                                 ))}
                               </div>
@@ -442,16 +745,74 @@ export default function CreateTournament() {
                       </DrawerContent>
                     </Drawer>
                   </div>
-                  {errors.players && (
+
+                  {/* Validation errors */}
+                  {errors.players && !isMixAmericano && (
                     <div className="w-auto text-center">
                       <p className="text-sm text-clx-text-danger">{errors.players.message}</p>
                     </div>
                   )}
-                  <div className="flex gap-2 w-full flex-wrap">
-                    {players.map((player, index) => (
-                      <Badge key={index} className="text-sm min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">{player}</Badge>
-                    ))}
-                  </div>
+
+                  {/* Mix Americano validation error */}
+                  {mixPlayerValidationError && isMixAmericano && (
+                    <div className="w-auto text-center">
+                      <p className="text-sm text-clx-text-danger">{mixPlayerValidationError}</p>
+                    </div>
+                  )}
+
+                  {/* Standard Americano: simple badge display */}
+                  {!isMixAmericano && (
+                    <div className="flex gap-2 w-full flex-wrap">
+                      {players.map((player, index) => (
+                        <Badge key={index} className="text-sm min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">{player}</Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Mix Americano: Grouped by gender display */}
+                  {isMixAmericano && mixPlayers.length > 0 && (
+                    <div className="space-y-5">
+                      {/* Men section */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-blue-50 px-2 py-1 rounded">
+                            <GenderMale size={16} className="text-clx-text-accent" />
+                          </div>
+                          <span className="text-sm text-clx-text-default">Men ({menCount})</span>
+                        </div>
+                        <div className="flex gap-2 w-full flex-wrap">
+                          {menPlayers.map((player, index) => (
+                            <Badge key={index} className="text-sm min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">
+                              {player.name}
+                            </Badge>
+                          ))}
+                          {menCount === 0 && (
+                            <span className="text-sm text-clx-text-placeholder">No men added</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Women section */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-red-50 px-2 py-1 rounded">
+                            <GenderFemale size={16} className="text-red-500" />
+                          </div>
+                          <span className="text-sm text-clx-text-default">Women ({womenCount})</span>
+                        </div>
+                        <div className="flex gap-2 w-full flex-wrap">
+                          {womenPlayers.map((player, index) => (
+                            <Badge key={index} className="text-sm min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">
+                              {player.name}
+                            </Badge>
+                          ))}
+                          {womenCount === 0 && (
+                            <span className="text-sm text-clx-text-placeholder">No women added</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Field>
             </div>
@@ -479,6 +840,45 @@ export default function CreateTournament() {
           </Field>
         </form>
       </div>
+
+      {/* Edit Player Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent showCloseButton={false} className="w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle>Edit player name</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={editingPlayerName}
+            onChange={(e) => setEditingPlayerName(e.target.value)}
+            placeholder="Enter player name"
+            className="h-11 text-base"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSaveEditPlayer();
+              }
+            }}
+          />
+          <DialogFooter className="flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-11"
+              onClick={() => setEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="flex-1 h-11 bg-clx-bg-accent text-white"
+              onClick={handleSaveEditPlayer}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

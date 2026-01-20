@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { DotsThreeOutlineVerticalIcon, UsersFourIcon, CheckCircleIcon, TrashIcon, PencilSimpleIcon, XIcon } from "@phosphor-icons/react";
+import { DotsThreeOutlineVerticalIcon, UsersFourIcon, CheckCircleIcon, TrashIcon, PencilSimpleIcon, XIcon, GenderMaleIcon, GenderFemaleIcon } from "@phosphor-icons/react";
 import back_button from "../../../public/arrow_Left.svg";
 import { Tournament, teamTypeNames, TeamType, regenerateTournamentWithFirstMatch, endTournament, deleteTournament } from "@/utils/tournament";
+import { regenerateMixAmericanoTournamentWithFirstMatch } from "@/utils/MixAmericanoTournament";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -95,18 +96,43 @@ export default function AppBarTournamentDetail({
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  // Lineup selection state
+  // Lineup selection state - for Mix Americano: A1=Man, A2=Woman, B1=Man, B2=Woman
   const [playerA1, setPlayerA1] = useState<string>("");
   const [playerA2, setPlayerA2] = useState<string>("");
   const [playerB1, setPlayerB1] = useState<string>("");
   const [playerB2, setPlayerB2] = useState<string>("");
 
+  // Check if this is a Mix Americano tournament
+  const isMixAmericano = tournament.teamType === "mix";
+
   // Get selected players to filter out from other selects
   const selectedPlayers = [playerA1, playerA2, playerB1, playerB2].filter(Boolean);
 
-  // Get available players for each slot
+  // Get men and women players for Mix Americano
+  const menPlayers = isMixAmericano && tournament.playerGenders
+    ? tournament.players.filter(p => tournament.playerGenders?.[p] === "male")
+    : [];
+  const womenPlayers = isMixAmericano && tournament.playerGenders
+    ? tournament.players.filter(p => tournament.playerGenders?.[p] === "female")
+    : [];
+
+  // Get available players for each slot (standard mode - any player)
   const getAvailablePlayers = (currentValue: string) => {
     return tournament.players.filter(
+      player => player === currentValue || !selectedPlayers.includes(player)
+    );
+  };
+
+  // Get available men for Mix Americano
+  const getAvailableMen = (currentValue: string) => {
+    return menPlayers.filter(
+      player => player === currentValue || !selectedPlayers.includes(player)
+    );
+  };
+
+  // Get available women for Mix Americano
+  const getAvailableWomen = (currentValue: string) => {
+    return womenPlayers.filter(
       player => player === currentValue || !selectedPlayers.includes(player)
     );
   };
@@ -185,12 +211,23 @@ export default function AppBarTournamentDetail({
     // Small delay to show progress bar animation
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Regenerate tournament with selected lineup
-    const updatedTournament = regenerateTournamentWithFirstMatch(
-      tournament.id,
-      [playerA1, playerA2] as [string, string],
-      [playerB1, playerB2] as [string, string]
-    );
+    // Regenerate tournament with selected lineup based on team type
+    let updatedTournament;
+    if (tournament.teamType === "mix") {
+      // Use Mix Americano regenerate function
+      updatedTournament = regenerateMixAmericanoTournamentWithFirstMatch(
+        tournament.id,
+        [playerA1, playerA2] as [string, string],
+        [playerB1, playerB2] as [string, string]
+      );
+    } else {
+      // Use Standard Americano regenerate function
+      updatedTournament = regenerateTournamentWithFirstMatch(
+        tournament.id,
+        [playerA1, playerA2] as [string, string],
+        [playerB1, playerB2] as [string, string]
+      );
+    }
 
     clearInterval(progressInterval);
     setRegenerateProgress(100);
@@ -199,7 +236,7 @@ export default function AppBarTournamentDetail({
     await new Promise(resolve => setTimeout(resolve, 200));
 
     if (updatedTournament && onTournamentUpdate) {
-      onTournamentUpdate(updatedTournament);
+      onTournamentUpdate(updatedTournament as Tournament);
       toast.success("New lineup generated");
     } else {
       toast.error("Failed to regenerate lineup");
@@ -210,7 +247,7 @@ export default function AppBarTournamentDetail({
   };
 
   return (
-    <nav className="w-full bg-white border-b border-clx-border-default sticky top-0 z-50 bg-white">
+    <nav className="w-full bg-white border-b border-clx-border-default sticky top-0 z-50">
       {/* Back button */}
       <div className="flex flex-col gap-4 px-4 pt-2 pb-2">
 
@@ -321,7 +358,7 @@ export default function AppBarTournamentDetail({
           <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-default px-4 pb-2 pt-3 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <DrawerTitle className="text-lg font-bold text-clx-text-default">
+                  <DrawerTitle className="text-sm font-semibold text-clx-text-default">
                     Adjust lineup
                   </DrawerTitle>
                 </div>
@@ -349,65 +386,152 @@ export default function AppBarTournamentDetail({
                   <div className="pb-5 text-sm">
                     <p>You are able to set the first match player. Please select which player you want to select. This setup will apply for the first round.</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-full space-y-3">
-                      <div><span className="text-base font-bold">Team A</span></div>
-                      <Select value={playerA1} onValueChange={setPlayerA1}>
-                        <SelectTrigger className="w-full" aria-label="Select Player A1">
-                          <SelectValue placeholder="Player A1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Player name</SelectLabel>
-                            {getAvailablePlayers(playerA1).map(player => (
-                              <SelectItem key={player} value={player}>{player}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      <Select value={playerA2} onValueChange={setPlayerA2}>
-                        <SelectTrigger className="w-full" aria-label="Select Player A2">
-                          <SelectValue placeholder="Player A2" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Player name</SelectLabel>
-                            {getAvailablePlayers(playerA2).map(player => (
-                              <SelectItem key={player} value={player}>{player}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <span className="text-clx-text-secondary">V.S</span>
-                    <div className="w-full space-y-3">
-                      <div><span className="text-base font-bold">Team B</span></div>
-                      <Select value={playerB1} onValueChange={setPlayerB1}>
-                        <SelectTrigger className="w-full" aria-label="Select Player B1">
-                          <SelectValue placeholder="Player B1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Player name</SelectLabel>
-                            {getAvailablePlayers(playerB1).map(player => (
-                              <SelectItem key={player} value={player}>{player}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      <Select value={playerB2} onValueChange={setPlayerB2}>
-                        <SelectTrigger className="w-full" aria-label="Select Player B2">
-                          <SelectValue placeholder="Player B2" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Player name</SelectLabel>
-                            {getAvailablePlayers(playerB2).map(player => (
-                              <SelectItem key={player} value={player}>{player}</SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
+                  <div className="flex flex-col gap-2">
+                    <div><span className="text-sm font-semibold">Set players</span></div>
+                    <div className="flex items-center gap-4">
+                      {/* Team A / Home */}
+                      <div className="w-full space-y-3">
+                        {isMixAmericano ? (
+                          <>
+                            {/* Men select */}
+                            <Select value={playerA1} onValueChange={setPlayerA1}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Home Man">
+                                <div className="flex items-center gap-2">
+                                  <GenderMaleIcon size={24} className="text-[#0061EF] shrink-0" />
+                                  <SelectValue placeholder="Player A1" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Men</SelectLabel>
+                                  {getAvailableMen(playerA1).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            {/* Women select */}
+                            <Select value={playerA2} onValueChange={setPlayerA2}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Home Woman">
+                                <div className="flex items-center gap-2">
+                                  <GenderFemaleIcon size={24} className="text-[#E01919] shrink-0" />
+                                  <SelectValue placeholder="Player A2" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Women</SelectLabel>
+                                  {getAvailableWomen(playerA2).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </>
+                        ) : (
+                          <>
+                            <Select value={playerA1} onValueChange={setPlayerA1}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Player A1">
+                                <SelectValue placeholder="Player A1" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Player name</SelectLabel>
+                                  {getAvailablePlayers(playerA1).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <Select value={playerA2} onValueChange={setPlayerA2}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Player A2">
+                                <SelectValue placeholder="Player A2" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Player name</SelectLabel>
+                                  {getAvailablePlayers(playerA2).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </>
+                        )}
+                      </div>
+
+                      <span className="text-clx-text-placeholder text-base">v.s</span>
+
+                      {/* Team B / Away */}
+                      <div className="w-full space-y-3">
+                        {isMixAmericano ? (
+                          <>
+                            {/* Men select */}
+                            <Select value={playerB1} onValueChange={setPlayerB1}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Away Man">
+                                <div className="flex items-center gap-2">
+                                  <GenderMaleIcon size={24} className="text-[#0061EF] shrink-0" />
+                                  <SelectValue placeholder="Player B1" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Men</SelectLabel>
+                                  {getAvailableMen(playerB1).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            {/* Women select */}
+                            <Select value={playerB2} onValueChange={setPlayerB2}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Away Woman">
+                                <div className="flex items-center gap-2">
+                                  <GenderFemaleIcon size={24} className="text-[#E01919] shrink-0" />
+                                  <SelectValue placeholder="Player B2" />
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Women</SelectLabel>
+                                  {getAvailableWomen(playerB2).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </>
+                        ) : (
+                          <>
+                            <Select value={playerB1} onValueChange={setPlayerB1}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Player B1">
+                                <SelectValue placeholder="Player B1" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Player name</SelectLabel>
+                                  {getAvailablePlayers(playerB1).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <Select value={playerB2} onValueChange={setPlayerB2}>
+                              <SelectTrigger className="w-full h-11" aria-label="Select Player B2">
+                                <SelectValue placeholder="Player B2" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectLabel>Player name</SelectLabel>
+                                  {getAvailablePlayers(playerB2).map(player => (
+                                    <SelectItem key={player} value={player}>{player}</SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

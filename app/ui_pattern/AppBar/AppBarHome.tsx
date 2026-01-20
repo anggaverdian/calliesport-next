@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MagnifyingGlassIcon, DotsThreeOutlineVerticalIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, DotsThreeOutlineVerticalIcon, MoonIcon } from "@phosphor-icons/react";
 import Brand_Logo from "../../../public/calliesport-logo.svg";
 
 export default function AppBarHome() {
@@ -21,7 +21,7 @@ export default function AppBarHome() {
                     <MagnifyingGlassIcon size={24} />
               </div>
               <div className="">
-                    <DotsThreeOutlineVerticalIcon size={24} weight="fill" />
+                    <MoonIcon size={24} weight="regular" />
               </div>
           </div>
         </div>
@@ -30,7 +30,7 @@ export default function AppBarHome() {
                 <TabsList className="bg-white gap-2">
                     <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5"  value="account">Tournaments</TabsTrigger>
                     <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5"  value="password">History</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5"  value="history">Rank</TabsTrigger>
+                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5 invisible"  value="history">Rank</TabsTrigger>
                 </TabsList>
             </Tabs>
         </div>

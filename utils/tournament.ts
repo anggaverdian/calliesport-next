@@ -10,8 +10,10 @@ export type TeamType = "standard" | "mix" | "team" | "mexicano";
 
 // Check if a team type is currently supported (has full implementation)
 export function isTeamTypeSupported(teamType: TeamType): boolean {
-  return teamType === "standard";
+  return teamType === "standard" || teamType === "mix";
 }
+
+export type Gender = "male" | "female";
 
 export interface Tournament {
   id: string;
@@ -19,6 +21,7 @@ export interface Tournament {
   teamType: TeamType;
   pointType: string;
   players: string[];
+  playerGenders?: Record<string, Gender>; // For Mix Americano: maps player name to gender
   rounds: Round[];
   createdAt: string;
   hasExtended?: boolean;
@@ -330,7 +333,7 @@ const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
 // Each player opposes each other player exactly twice (16 oppositions)
 
 const WHIST_MATRIX_9_PLAYERS: [number, number, number, number][] = [
-  [0, 2, 1, 3],
+  /*[0, 2, 1, 3],
   [4, 8, 3, 6],
   [6, 8, 1, 2],
   [3, 7, 1, 6],
@@ -347,7 +350,25 @@ const WHIST_MATRIX_9_PLAYERS: [number, number, number, number][] = [
   [2, 3, 5, 6],
   [1, 5, 2, 8],
   [4, 6, 1, 7],
-  [2, 7, 0, 3]
+  [2, 7, 0, 3]*/
+  [0, 2, 1, 3], // Round 1
+  [5, 7, 3, 8], // Round 2
+  [2, 6, 0, 4], // Round 3
+  [3, 7, 1, 6], // Round 4
+  [1, 5, 2, 8], // Round 5
+  [4, 6, 1, 7], // Round 6
+  [5, 8, 0, 6], // Round 7
+  [2, 7, 0, 3], // Round 8
+  [0, 1, 4, 5], // Round 9
+  [2, 4, 7, 8], // Round 10
+  [2, 3, 5, 6], // Round 11
+  [0, 7, 1, 8], // Round 12
+  [1, 4, 3, 5], // Round 13
+  [0, 5, 6, 7], // Round 14
+  [4, 8, 3, 6], // Round 15
+  [2, 5, 4, 7], // Round 16
+  [6, 8, 1, 2], // Round 17
+  [3, 4, 0, 8]  // Round 18
 ];
 
 // ============================================================================
