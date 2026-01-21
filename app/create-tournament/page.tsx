@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { PlusIcon, XIcon, DotsThreeIcon, PencilSimpleIcon, GenderMale, GenderFemale } from "@phosphor-icons/react";
+import { PlusIcon, XIcon, DotsThreeIcon, PencilSimpleIcon, GenderMaleIcon, GenderFemaleIcon } from "@phosphor-icons/react";
 import {
   Popover,
   PopoverContent,
@@ -122,28 +122,23 @@ export default function CreateTournament() {
   const menCount = mixPlayers.filter(p => p.gender === "male").length;
   const womenCount = mixPlayers.filter(p => p.gender === "female").length;
 
-  // Validate Mix Americano requirements
+  // Validate Mix Americano requirements (called on form submit)
   const validateMixAmericano = (): { valid: boolean; error?: string } => {
     if (!isMixAmericano) return { valid: true };
 
-    if (mixPlayers.length !== MIX_AMERICANO_REQUIRED_PLAYERS) {
+    // No players added
+    if (mixPlayers.length === 0) {
       return {
         valid: false,
-        error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_PLAYERS} players (currently ${mixPlayers.length})`,
+        error: "Please add players",
       };
     }
 
-    if (menCount !== MIX_AMERICANO_REQUIRED_MEN) {
+    // Check for exactly 4 men and 4 women
+    if (menCount !== MIX_AMERICANO_REQUIRED_MEN || womenCount !== MIX_AMERICANO_REQUIRED_WOMEN) {
       return {
         valid: false,
-        error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_MEN} men (currently ${menCount})`,
-      };
-    }
-
-    if (womenCount !== MIX_AMERICANO_REQUIRED_WOMEN) {
-      return {
-        valid: false,
-        error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_WOMEN} women (currently ${womenCount})`,
+        error: `Requires ${MIX_AMERICANO_REQUIRED_MEN} men and ${MIX_AMERICANO_REQUIRED_WOMEN} women (currently ${menCount} men, ${womenCount} women)`,
       };
     }
 
@@ -155,9 +150,12 @@ export default function CreateTournament() {
       // Validate Mix Americano requirements
       const validation = validateMixAmericano();
       if (!validation.valid) {
-        setMixPlayerValidationError(validation.error || "Invalid Mix Americano configuration");
+        setMixPlayerValidationError(validation.error || "Invalid configuration");
         return;
       }
+
+      // Clear any previous error
+      setMixPlayerValidationError("");
 
       // Save Mix Americano tournament
       const result = saveMixAmericanoTournament({
@@ -182,6 +180,17 @@ export default function CreateTournament() {
       });
       toast.success(`Tournament "${data.tournamentName}" created with ${data.players.length} players!`);
       router.push("/");
+    }
+  };
+
+  // Handle form validation errors - show Mix Americano specific error when players validation fails
+  const onFormError = () => {
+    if (isMixAmericano) {
+      // Run Mix Americano validation to show appropriate error
+      const validation = validateMixAmericano();
+      if (!validation.valid) {
+        setMixPlayerValidationError(validation.error || "Invalid configuration");
+      }
     }
   };
 
@@ -257,7 +266,6 @@ export default function CreateTournament() {
       }
 
       setPlayerInputError("");
-      setMixPlayerValidationError("");
       setPlayerInput("");
       toast.success(`Added ${newPlayerNames.length} player(s)!`);
     }
@@ -276,7 +284,6 @@ export default function CreateTournament() {
       setValue("players", updatedPlayers, { shouldValidate: true });
       toast.success(playerName + " removed");
     }
-    setMixPlayerValidationError("");
   };
 
   const handleEditPlayer = (index: number) => {
@@ -345,7 +352,6 @@ export default function CreateTournament() {
       gender: updatedMixPlayers[index].gender === "male" ? "female" : "male",
     };
     setMixPlayers(updatedMixPlayers);
-    setMixPlayerValidationError("");
   };
 
   // Reset players when switching team types
@@ -356,7 +362,6 @@ export default function CreateTournament() {
       setValue("players", []);
       setMixPlayers([]);
       setPlayerInputError("");
-      setMixPlayerValidationError("");
     }
   };
 
@@ -370,7 +375,7 @@ export default function CreateTournament() {
 
       {/* Main content */}
       <div className="container">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onFormError)}>
           <FieldGroup className="h-auto">
             <div className="flex-1 p-4 space-y-7">
               {/* Tournament name input */}
@@ -636,9 +641,9 @@ export default function CreateTournament() {
                                       onClick={() => handleToggleGender(index)}
                                     >
                                       {player.gender === "male" ? (
-                                        <GenderMale size={20} weight="regular" className="text-clx-text-accent" />
+                                        <GenderMaleIcon size={20} weight="regular" className="text-clx-text-accent" />
                                       ) : (
-                                        <GenderFemale size={20} weight="regular" className="text-red-500" />
+                                        <GenderFemaleIcon size={20} weight="regular" className="text-red-500" />
                                       )}
                                     </Button>
                                     <Popover
@@ -753,7 +758,7 @@ export default function CreateTournament() {
                     </div>
                   )}
 
-                  {/* Mix Americano validation error */}
+                  {/* Mix Americano validation error - only shown after clicking Create */}
                   {mixPlayerValidationError && isMixAmericano && (
                     <div className="w-auto text-center">
                       <p className="text-sm text-clx-text-danger">{mixPlayerValidationError}</p>
@@ -761,7 +766,7 @@ export default function CreateTournament() {
                   )}
 
                   {/* Standard Americano: simple badge display */}
-                  {!isMixAmericano && (
+                  {!isMixAmericano && players.length > 0 && (
                     <div className="flex gap-2 w-full flex-wrap">
                       {players.map((player, index) => (
                         <Badge key={index} className="text-sm min-w-[62px] font-normal px-3 py-1 rounded-sm bg-clx-bg-neutral-bold border-0" variant="outline">{player}</Badge>
@@ -771,12 +776,12 @@ export default function CreateTournament() {
 
                   {/* Mix Americano: Grouped by gender display */}
                   {isMixAmericano && mixPlayers.length > 0 && (
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       {/* Men section */}
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         <div className="flex items-center gap-2">
                           <div className="bg-blue-50 px-2 py-1 rounded">
-                            <GenderMale size={16} className="text-clx-text-accent" />
+                            <GenderMaleIcon size={16} className="text-clx-text-accent" />
                           </div>
                           <span className="text-sm text-clx-text-default">Men ({menCount})</span>
                         </div>
@@ -793,10 +798,10 @@ export default function CreateTournament() {
                       </div>
 
                       {/* Women section */}
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         <div className="flex items-center gap-2">
                           <div className="bg-red-50 px-2 py-1 rounded">
-                            <GenderFemale size={16} className="text-red-500" />
+                            <GenderFemaleIcon size={16} className="text-red-500" />
                           </div>
                           <span className="text-sm text-clx-text-default">Women ({womenCount})</span>
                         </div>

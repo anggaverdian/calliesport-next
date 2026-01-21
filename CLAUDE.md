@@ -77,6 +77,21 @@ const form = useForm<FormData>({
 });
 ```
 
+**Important**: Validation errors should only be displayed when the user clicks the submit button (e.g., "Create"), not proactively while the user is filling the form. Use state to store validation errors and set them in `onSubmit`:
+```typescript
+const [validationError, setValidationError] = useState("");
+
+const onSubmit = (data: FormData) => {
+  const validation = validateData();
+  if (!validation.valid) {
+    setValidationError(validation.error);
+    return;
+  }
+  setValidationError(""); // Clear error on success
+  // ... proceed with form submission
+};
+```
+
 ### Component Architecture
 
 - **App Router Structure**: Each route is a folder with `page.tsx`

@@ -247,7 +247,7 @@ export default function AppBarTournamentDetail({
   };
 
   return (
-    <nav className="w-full bg-white border-b border-clx-border-default sticky top-0 z-50">
+    <nav className="w-full bg-white border-b border-neutral-100 sticky top-0 z-50">
       {/* Back button */}
       <div className="flex flex-col gap-4 px-4 pt-2 pb-2">
 
