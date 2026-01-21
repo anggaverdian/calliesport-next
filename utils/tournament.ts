@@ -190,6 +190,7 @@ const WHIST_MATRIX_4_PLAYERS: [number, number, number, number][] = [
 // Perfect Whist Tournament Matrix for 5 players (10 rounds)
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-4
 // Resting player for each round is the one not in the match
+// 4x play in a row = all player
 
 const WHIST_MATRIX_5_PLAYERS: [number, number, number, number][] = [
 // --- CYCLE 1 ---
@@ -223,27 +224,28 @@ const WHIST_MATRIX_5_PLAYERS: [number, number, number, number][] = [
 // - Each pair partners exactly 2 times
 // - Each pair opposes exactly 4 times
 // - Each player plays exactly 10 matches
-
+// 3 Plays 4x in a row = 5-6-7-8
+// 4 Plays 4x in a row = 8-9-10-11
 const WHIST_MATRIX_6_PLAYERS: [number, number, number, number][] = [
-  [0, 1, 2, 3],
-  [4, 5, 0, 1], 
-  [2, 3, 4, 5], 
+  [0, 1, 2, 3], //R1
+  [4, 5, 0, 1], //R2
+  [2, 3, 4, 5], //R3
 
-  [0, 2, 1, 4], 
-  [3, 5, 0, 2], 
-  [1, 4, 3, 5], 
+  [0, 2, 1, 4], //R4
+  [3, 5, 0, 2], //R5
+  [1, 4, 3, 5], //R6
 
-  [0, 3, 1, 5], 
-  [2, 4, 0, 3], 
-  [1, 5, 2, 4], 
+  [0, 3, 1, 5], //R7
+  [2, 4, 0, 3], //R8
+  [1, 5, 2, 4], //R9
 
-  [0, 4, 2, 5], 
-  [1, 3, 0, 4], 
-  [2, 5, 1, 3], 
+  [0, 4, 2, 5], //R10
+  [1, 3, 0, 4], //R11
+  [2, 5, 1, 3], //R12
 
-  [0, 5, 3, 4], 
-  [1, 2, 0, 5], 
-  [3, 4, 1, 2]  
+  [0, 5, 3, 4], //R13
+  [1, 2, 0, 5], //R14
+  [3, 4, 1, 2]  //R15
 ];
 
 // ============================================================================
@@ -259,36 +261,35 @@ const WHIST_MATRIX_6_PLAYERS: [number, number, number, number][] = [
 // Perfect Whist Tournament Matrix for 7 players (21 rounds)
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-6
 // Resting player for each round is the one not in the match (7 - 4 = 3 resting)
+// Max consecutive play = 4
+// Max consecutive rest = 3
 const WHIST_MATRIX_7_PLAYERS: [number, number, number, number][] = [
-    // --- SET 1: Based on pattern [0, 1] vs [2, 4] ---
-    // Balances: Partner Diff 1 & 2 / Versus Diff 1, 2, 3
-    [0, 1, 2, 4], // Round 1   (Rest: 3, 5, 6)
-    [1, 2, 3, 5], // Round 2   (Rest: 4, 6, 0)
-    [2, 3, 4, 6], // Round 3   (Rest: 5, 0, 1)
-    [3, 4, 5, 0], // Round 4   (Rest: 6, 1, 2)
-    [4, 5, 6, 1], // Round 5   (Rest: 0, 2, 3)
-    [5, 6, 0, 2], // Round 6   (Rest: 1, 3, 4)
-    [6, 0, 1, 3], // Round 7   (Rest: 2, 4, 5)
+    // --- SET 1 ---
+    [0, 1, 2, 4], // Round 1
+    [1, 2, 3, 5], // Round 2
+    [2, 3, 4, 6], // Round 3
+    [3, 4, 5, 0], // Round 4
+    [4, 5, 6, 1], // Round 5
+    [5, 6, 0, 2], // Round 6
+    [6, 0, 1, 3], // Round 7
 
-    // --- SET 2: Based on pattern [0, 6] vs [2, 5] ---
-    // Balances: Partner Diff 1 & 3 / Versus Diff 1, 2, 3
-    [0, 6, 2, 5], // Round 8   (Rest: 1, 3, 4)
-    [1, 0, 3, 6], // Round 9   (Rest: 2, 4, 5)
-    [2, 1, 4, 0], // Round 10  (Rest: 3, 5, 6)
-    [3, 2, 5, 1], // Round 11  (Rest: 4, 6, 0)
-    [4, 3, 6, 2], // Round 12  (Rest: 5, 0, 1)
-    [5, 4, 0, 3], // Round 13  (Rest: 6, 1, 2)
-    [6, 5, 1, 4], // Round 14  (Rest: 0, 2, 3)
+    // --- SET 2 ---
+    [3, 2, 5, 1], // Round 8
+    [4, 3, 6, 2], // Round 9
+    [2, 1, 4, 0], // Round 10
+    [0, 6, 2, 5], // Round 11
+    [1, 0, 3, 6], // Round 12
+    [5, 4, 0, 3], // Round 13
+    [6, 5, 1, 4], // Round 14
 
-    // --- SET 3: Based on pattern [0, 2] vs [1, 4] ---
-    // Balances: Partner Diff 2 & 3 / Versus Diff 1, 2, 3
-    [0, 2, 1, 4], // Round 15  (Rest: 3, 5, 6)
-    [1, 3, 2, 5], // Round 16  (Rest: 4, 6, 0)
-    [2, 4, 3, 6], // Round 17  (Rest: 5, 0, 1)
-    [3, 5, 4, 0], // Round 18  (Rest: 6, 1, 2)
-    [4, 6, 5, 1], // Round 19  (Rest: 0, 2, 3)
-    [5, 0, 6, 2], // Round 20  (Rest: 1, 3, 4)
-    [6, 1, 0, 3]  // Round 21  (Rest: 2, 4, 5)
+    // --- SET 3 ---
+    [0, 2, 1, 4], // Round 15
+    [1, 3, 2, 5], // Round 16
+    [2, 4, 3, 6], // Round 17
+    [3, 5, 4, 0], // Round 18
+    [4, 6, 5, 1], // Round 19
+    [5, 0, 6, 2], // Round 20
+    [6, 1, 0, 3]  // Round 21
 ]
 
 // ============================================================================
@@ -301,6 +302,7 @@ const WHIST_MATRIX_7_PLAYERS: [number, number, number, number][] = [
 
 // Perfect Whist Tournament Matrix for 8 players (14 rounds)
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-7
+// PERFECT no need change
 const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
   [0, 1, 2, 3], // Round 1:  --> Random
   [4, 5, 6, 7], // Round 2:  --> Rest player play
@@ -331,6 +333,8 @@ const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-8
 // Each player partners with each other player exactly once (8 partnerships)
 // Each player opposes each other player exactly twice (16 oppositions)
+// Rest 3x in a row = 0, 2, 3, 6
+// Play 3x in a row = 0, 1, 4, 6
 
 const WHIST_MATRIX_9_PLAYERS: [number, number, number, number][] = [
   [0, 2, 1, 3], // Round 1
@@ -345,10 +349,10 @@ const WHIST_MATRIX_9_PLAYERS: [number, number, number, number][] = [
   [2, 4, 7, 8], // Round 10
   [2, 3, 5, 6], // Round 11
   [0, 7, 1, 8], // Round 12
-  [1, 4, 3, 5], // Round 13
-  [0, 5, 6, 7], // Round 14
+  [2, 5, 4, 7], // Round 13
+  [1, 4, 3, 5], // Round 14  ← (was Round 16)
   [4, 8, 3, 6], // Round 15
-  [2, 5, 4, 7], // Round 16
+  [0, 5, 6, 7], // Round 16  ← (was Round 14)
   [6, 8, 1, 2], // Round 17
   [3, 4, 0, 8]  // Round 18
 ];
@@ -366,6 +370,9 @@ const WHIST_MATRIX_9_PLAYERS: [number, number, number, number][] = [
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-9
 // Note: With 10 players and 25 rounds, each player plays 10 matches
 // Partner distribution: Some pairs partner 1x, most pairs never partner (balanced by opponent frequency)
+// Rest 4x+ in a row = 0, 1, 2, 3, 4, 5, 6, 9 
+// Rest 6x in a row = 5, 6
+// Play 3x in a row = 3, 4, 5, 6, 7, 8, 9 
 
 const WHIST_MATRIX_10_PLAYERS: [number, number, number, number][] = [
 // --- SET 1: The "Tight" Cycle ---
@@ -841,21 +848,27 @@ function generateWhistMatches10PlayersWithFirstMatch(
     throw new Error("Whist matrix is only for 10 players");
   }
 
-  // For 10 players, the first round in the matrix is [0, 1, 2, 3]
-  // This means: index 0 & 1 are partners (teamA), index 2 & 3 are partners (teamB)
-  // Remaining players go to indices 4-9
+  // For 10 players, the first round in the matrix is [0, 1, 3, 5]
+  // This means: index 0 & 1 are partners (teamA), index 3 & 5 are partners (teamB)
+  // Remaining players go to indices 2, 4, 6, 7, 8, 9
   const firstMatchPlayers = [...teamA, ...teamB];
   const remainingPlayers = players.filter(p => !firstMatchPlayers.includes(p));
   const shuffledRemaining = shuffleArray(remainingPlayers);
 
   // Build the reordered players array to match matrix expectations
-  const reorderedPlayers: string[] = [
-    teamA[0],           // index 0: teamA partner 1
-    teamA[1],           // index 1: teamA partner 2
-    teamB[0],           // index 2: teamB partner 1
-    teamB[1],           // index 3: teamB partner 2
-    ...shuffledRemaining // indices 4-9: remaining players
-  ];
+  // Matrix round 1: [0, 1, 3, 5] means players[0] & players[1] are teamA, players[3] & players[5] are teamB
+  const reorderedPlayers: string[] = new Array(10);
+  reorderedPlayers[0] = teamA[0];  // teamA partner 1
+  reorderedPlayers[1] = teamA[1];  // teamA partner 2
+  reorderedPlayers[3] = teamB[0];  // teamB partner 1
+  reorderedPlayers[5] = teamB[1];  // teamB partner 2
+  // Fill remaining indices 2, 4, 6, 7, 8, 9 with shuffled remaining players
+  reorderedPlayers[2] = shuffledRemaining[0];
+  reorderedPlayers[4] = shuffledRemaining[1];
+  reorderedPlayers[6] = shuffledRemaining[2];
+  reorderedPlayers[7] = shuffledRemaining[3];
+  reorderedPlayers[8] = shuffledRemaining[4];
+  reorderedPlayers[9] = shuffledRemaining[5];
 
   return generateWhistMatches10Players(reorderedPlayers, numRounds, 0);
 }
