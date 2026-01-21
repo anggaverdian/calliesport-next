@@ -14,10 +14,20 @@ const quantico = Quantico({
   variable: '--font-score', // This creates a CSS variable
 });
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover', // This is the critical part for transparency
+}
+
 export const metadata: Metadata = {
   title: "Calliesport Padel",
   description: "Score tracking app for your game",
   icons: { icon: "/calliesport-logo.png" },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+  },
 };
 
 export default function RootLayout({

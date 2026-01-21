@@ -370,7 +370,7 @@ export default function CreateTournament() {
   const womenPlayers = mixPlayers.filter(p => p.gender === "female");
 
   return (
-    <main className="w-auto min-h-screen">
+    <main className="w-auto h-full">
       <AppBarDetail />
 
       {/* Main content */}
@@ -446,7 +446,7 @@ export default function CreateTournament() {
                                 <p className="text-sm font-semibold text-clx-text-default leading-5 tracking-[0.2px]">
                                   {team.name}
                                 </p>
-                                <p className="text-xs text-clx-text-default leading-[18px]">
+                                <p className="text-xs text-clx-text-secondary leading-[18px]">
                                   {team.description}
                                 </p>
                               </div>
@@ -533,7 +533,7 @@ export default function CreateTournament() {
                           </span>
                         </Button>
                       </DrawerTrigger>
-                      <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={true}>
+                      <DrawerContent className="rounded-none!" showHandle={true}>
                         <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
                           <div className="flex items-center justify-between invisible">
                             <div className="flex items-center gap-3">
