@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge"
 import { MagnifyingGlassIcon, DotsThreeOutlineVerticalIcon, MoonIcon } from "@phosphor-icons/react";
 import Brand_Logo from "../../../public/calliesport-logo.svg";
 
@@ -12,11 +13,11 @@ export default function AppBarHome() {
                   <Image src={Brand_Logo} width={40} height={40} alt="logo" className="[&_path:first-child]:fill-[--color-orange-500]" />
                   <div className="space-y-0">
                       <div className="text-sm text-clx-text-placeholder">Padel</div>
-                      <h1 className="font-weight-black">Calliesport</h1>
+                      <div className="flex gap-2 items-center"><h1 className="font-weight-black">Calliesport</h1><Badge className="text-xs h-5 bg-clx-bg-accent">Beta</Badge></div>
                   </div>
               </div>
           </div>
-          <div className="flex gap-2 text-clx-icon-disabled">
+          <div className="flex gap-2 text-clx-icon-disabled invisible">
               <div className="">
                     <MagnifyingGlassIcon size={24} />
               </div>
