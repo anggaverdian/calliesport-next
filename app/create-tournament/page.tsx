@@ -394,7 +394,7 @@ export default function CreateTournament() {
                         id="tournament-name"
                         placeholder="e.g Padelhaus tournament"
                         maxLength={64}
-                        className={`h-11 text-base placeholder:text-clx-text-placeholder placeholder:text-sm ${errors.tournamentName ? "border-clx-border-danger-bold" : "border-clx-border-textfield"}`}
+                        className={`h-11 text-base placeholder:text-clx-text-placeholder ${errors.tournamentName ? "border-clx-border-danger-bold" : "border-clx-border-textfield"}`}
                       />
                     )}
                   />

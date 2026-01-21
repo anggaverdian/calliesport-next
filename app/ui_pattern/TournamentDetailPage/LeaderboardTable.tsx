@@ -159,9 +159,9 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
 
       {/* Player Summary Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="bg-white max-h-[85vh]" showHandle={false}>
-          <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-subtle px-4 py-3">
-            <div className="flex items-center justify-between">
+        <DrawerContent className="bg-white max-h-[85vh]" showHandle={true}>
+          <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
+            <div className="flex items-center justify-between invisible">
               <DrawerTitle className="text-base font-bold text-clx-text-default">
                 Player summary
               </DrawerTitle>
@@ -232,22 +232,19 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           ) : (
             // Summary View - Shows pairing stats table
             <div className="flex-1 overflow-auto p-4 space-y-6">
+              <h2>Game summary</h2>
               {/* Player Name Header */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 border-1 rounded-xl p-3">
                 <div className="w-8 h-8 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
-                  <UserIcon size={16} className="text-clx-primary" />
+                  <UserIcon size={16} weight="fill" className="text-clx-icon-primary" />
                 </div>
-                <span className="text-lg font-bold text-clx-text-default">
+                <span className="text-lg font-medium text-clx-text-default">
                   {selectedPlayer}
                 </span>
               </div>
 
               {/* Recap Section */}
               <div className="space-y-2">
-                <h3 className="text-base font-semibold text-clx-text-default">
-                  Recap for {tournament.rounds.length} rounds
-                </h3>
-
                 {/* Pairing Stats Table */}
                 <Table>
                   <TableHeader>
@@ -256,7 +253,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                         Player
                       </TableHead>
                       <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[80px]">
-                        Partner up
+                        Partner
                       </TableHead>
                       <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[80px]">
                         Versus

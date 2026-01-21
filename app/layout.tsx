@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Quantico } from "next/font/google";
+import { DM_Sans, Quantico, Funnel_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 

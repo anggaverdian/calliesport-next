@@ -5,14 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    /* Font Values */
+    /* Font Values 
   --font-family-default: "DM Sans", system-ui, -apple-system, sans-serif;
     
-  /* Font family aliases for typography utilities */
+  /* Font family aliases for typography utilities
   --font-family-overline: var(--font-family-default);
   --font-family-caption: var(--font-family-default);
   --font-family-label: var(--font-family-default);
-  --font-family-title: var(--font-family-default);
+  --font-family-title: var(--font-family-default);*/
 
   /* Neutral/Gray */
   --color-neutral-gray-25: oklch(0.9841 0.0035 39.48); /*#fcf9f8*/
@@ -332,15 +332,6 @@
 
   .animate-slide-in-from-top {
     animation: slide-in-from-top 0.3s ease-out forwards;
-  }
-
-   .clx-text-score {
-    text-align: center;
-    font-family: 'Quantico', sans-serif;
-    font-size: 28px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 28px;
   }
 
  .clx-hero {
