@@ -333,24 +333,6 @@ const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
 // Each player opposes each other player exactly twice (16 oppositions)
 
 const WHIST_MATRIX_9_PLAYERS: [number, number, number, number][] = [
-  /*[0, 2, 1, 3],
-  [4, 8, 3, 6],
-  [6, 8, 1, 2],
-  [3, 7, 1, 6],
-  [5, 7, 3, 8],
-  [2, 4, 7, 8],
-  [2, 6, 0, 4],
-  [2, 5, 4, 7],
-  [1, 4, 3, 5],
-  [3, 4, 0, 8],
-  [5, 8, 0, 6],
-  [0, 5, 6, 7],
-  [0, 7, 1, 8],
-  [0, 1, 4, 5],
-  [2, 3, 5, 6],
-  [1, 5, 2, 8],
-  [4, 6, 1, 7],
-  [2, 7, 0, 3]*/
   [0, 2, 1, 3], // Round 1
   [5, 7, 3, 8], // Round 2
   [2, 6, 0, 4], // Round 3
@@ -796,18 +778,19 @@ function generateWhistMatches9PlayersWithFirstMatch(
     throw new Error("Whist matrix is only for 9 players");
   }
 
-  // For 9 players, the first round in the matrix is [0, 1, 2, 3]
-  // This means: index 0 & 1 are partners (teamA), index 2 & 3 are partners (teamB)
+  // For 9 players, the first round in the matrix is [0, 2, 1, 3]
+  // This means: index 0 & 2 are partners (teamA), index 1 & 3 are partners (teamB)
   // Remaining players go to indices 4-8
   const firstMatchPlayers = [...teamA, ...teamB];
   const remainingPlayers = players.filter(p => !firstMatchPlayers.includes(p));
   const shuffledRemaining = shuffleArray(remainingPlayers);
 
   // Build the reordered players array to match matrix expectations
+  // Matrix round 1: [0, 2, 1, 3] means players[0] & players[2] are teamA, players[1] & players[3] are teamB
   const reorderedPlayers: string[] = [
     teamA[0],           // index 0: teamA partner 1
-    teamA[1],           // index 1: teamA partner 2
-    teamB[0],           // index 2: teamB partner 1
+    teamB[0],           // index 1: teamB partner 1
+    teamA[1],           // index 2: teamA partner 2
     teamB[1],           // index 3: teamB partner 2
     ...shuffledRemaining // indices 4-8: remaining players
   ];

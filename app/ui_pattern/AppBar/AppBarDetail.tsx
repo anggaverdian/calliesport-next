@@ -19,7 +19,7 @@ export default function AppBarDetail() {
                   </div>
               </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 invisible">
               <div>
                     <DotsThreeOutlineVerticalIcon size={20} weight="fill" className="text-clx-icon-default" />
               </div>

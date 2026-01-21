@@ -320,7 +320,7 @@ export default function TournamentDetailPage() {
   };
 
   return (
-    <main className="w-auto min-h-screen bg-white flex flex-col">
+    <main className="min-w-[393px] w-auto min-h-screen bg-white flex flex-col">
       <AppBarTournamentDetail
         tournament={tournament}
         activeTab={activeTab}
