@@ -186,6 +186,7 @@
     --color-clx-text-disabled: var(--color-neutral-gray-500);
     --color-clx-text-primary: var(--color-orange-500);
     --color-clx-text-accent: var(--color-blue-500);
+    --color-clx-text-accent-bold: var(--color-blue-700);
     --color-clx-text-success: var(--color-green-700);
     --color-clx-text-warning: var(--color-yellow-700);
     --color-clx-text-danger: var(--color-red-500);

@@ -372,12 +372,12 @@ export default function CreateTournament() {
       <div className="container">
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup className="h-auto">
-            <div className="flex-1 p-4 space-y-6">
+            <div className="flex-1 p-4 space-y-7">
               {/* Tournament name input */}
               <Field>
                 <div className="grid w-full items-center gap-1">
                   <Label htmlFor="tournament-name" className="text-base font-semibold text-clx-text-default">
-                    Tournament name
+                    Name
                   </Label>
                   <Controller
                     name="tournamentName"
@@ -387,9 +387,9 @@ export default function CreateTournament() {
                         {...field}
                         type="text"
                         id="tournament-name"
-                        placeholder=""
+                        placeholder="e.g Padelhaus tournament"
                         maxLength={64}
-                        className={`h-11 text-base ${errors.tournamentName ? "border-clx-border-danger-bold" : "border-clx-border-textfield"}`}
+                        className={`h-11 text-base placeholder:text-clx-text-placeholder placeholder:text-sm ${errors.tournamentName ? "border-clx-border-danger-bold" : "border-clx-border-textfield"}`}
                       />
                     )}
                   />
@@ -401,10 +401,10 @@ export default function CreateTournament() {
 
               {/* Team type selection */}
               <Field>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <p className="text-base font-semibold text-clx-text-default tracking-[0.2px]">Which team up you want to play?</p>
-                    <p className="text-xs text-clx-text-dark-subtle">Determine your team pairing</p>
+                    <p className="text-base font-semibold text-clx-text-default tracking-[0.2px]">Gameplay</p>
+                    <p className="text-xs text-clx-text-secondary">Set tournament team pairing</p>
                   </div>
                   <Controller
                     name="teamType"
@@ -426,8 +426,8 @@ export default function CreateTournament() {
                               htmlFor={`team-${team.id}`}
                               className={`flex items-center gap-5 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
                                 isSelected
-                                  ? "bg-clx-bg-neutral-bold border-clx-border-default"
-                                  : "bg-white border-clx-border-default"
+                                  ? "bg-clx-bg-neutral-bold border-neutral-200"
+                                  : "bg-white border-neutral-200"
                               }`}
                             >
                               <Image
@@ -441,7 +441,7 @@ export default function CreateTournament() {
                                 <p className="text-sm font-semibold text-clx-text-default leading-5 tracking-[0.2px]">
                                   {team.name}
                                 </p>
-                                <p className="text-xs text-clx-text-secondary leading-[18px]">
+                                <p className="text-xs text-clx-text-default leading-[18px]">
                                   {team.description}
                                 </p>
                               </div>
@@ -484,8 +484,8 @@ export default function CreateTournament() {
                               onClick={() => field.onChange(point.id)}
                               className={`shrink-0 whitespace-nowrap px-3 py-1.5 h-auto rounded-full text-sm transition-all ${
                                 isSelected
-                                  ? "bg-clx-bg-neutral-bold text-clx-text-default font-semibold border-1 border-clx-border-default"
-                                  : "bg-white text-clx-text-secondary font-normal border-1 hover:bg-clx-bg-neutral-hover"
+                                  ? "bg-clx-bg-neutral-bold text-clx-text-default font-semibold border-1 border-neutral-200"
+                                  : "bg-white text-clx-text-secondary font-normal border-1 border-neutral-200 hover:bg-clx-bg-neutral-hover"
                               }`}
                             >
                               {point.label}
@@ -500,10 +500,10 @@ export default function CreateTournament() {
 
               {/* Players section */}
               <Field>
-                <div className="space-y-4 pb-8 pt-2">
+                <div className="space-y-4 pb-20 pt-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-lg font-bold text-clx-text-default">Players</p>
+                      <p className="text-base font-semibold text-clx-text-default">Players</p>
                       <p className="text-sm text-clx-text-dark-subtle">
                         <span className="text-xs">Total {isMixAmericano ? mixPlayers.length : players.length} players added</span>
                       </p>
@@ -528,9 +528,9 @@ export default function CreateTournament() {
                           </span>
                         </Button>
                       </DrawerTrigger>
-                      <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={false}>
-                        <DrawerHeader className="bg-neutral-100 border-b border-clx-border-default px-4 pb-3 pt-4 shrink-0">
-                          <div className="flex items-center justify-between">
+                      <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={true}>
+                        <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
+                          <div className="flex items-center justify-between invisible">
                             <div className="flex items-center gap-3">
                               <DrawerClose asChild>
                                 <button type="button" className="text-clx-icon-default">
