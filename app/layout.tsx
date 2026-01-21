@@ -36,8 +36,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="flex justify-center">
-      <body className={`${GlobalFont.className} antialiased max-w-[393px] min-w-[393px] min-h-screen overflow-x-hidden`}>
+    <html lang="en" className="">
+      <body className={`${GlobalFont.className} antialiased max-w-[393px] min-w-[393px] min-h-screen overflow-x-hidden mx-auto`}>
         {children}
         <Toaster position="top-center" />
       </body>

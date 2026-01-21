@@ -370,7 +370,7 @@ export default function CreateTournament() {
   const womenPlayers = mixPlayers.filter(p => p.gender === "female");
 
   return (
-    <main className="w-auto h-full">
+    <main className="min-w-[393px] h-full">
       <AppBarDetail />
 
       {/* Main content */}

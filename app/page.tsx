@@ -46,12 +46,12 @@ export default function Home() {
   }
 
   return (
-    <main className="container w-auto min-h-screen flex flex-col">
+    <main className="container relative w-auto min-h-screen flex flex-col">
       <AppBarHome />
 
       {tournaments.length === 0 ? (
         // Empty state
-        <div className="container p-4 space-y-6 text-center py-20">
+        <div className="p-4 space-y-6 text-center py-20">
           <div className="space-y-2">
             <div className="flex justify-center items-center">
               <Image src={corgi_blank} alt="logo blank" width={203} height={140} />
