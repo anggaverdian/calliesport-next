@@ -138,7 +138,7 @@ export default function CreateTournament() {
     if (menCount !== MIX_AMERICANO_REQUIRED_MEN || womenCount !== MIX_AMERICANO_REQUIRED_WOMEN) {
       return {
         valid: false,
-        error: `Requires ${MIX_AMERICANO_REQUIRED_MEN} men and ${MIX_AMERICANO_REQUIRED_WOMEN} women (currently ${menCount} men, ${womenCount} women)`,
+        error: `Requires ${MIX_AMERICANO_REQUIRED_MEN} men and ${MIX_AMERICANO_REQUIRED_WOMEN} women.`,
       };
     }
 
@@ -220,7 +220,7 @@ export default function CreateTournament() {
         // Mix Americano: Check max limit of 8
         const totalPlayers = mixPlayers.length + newPlayerNames.length;
         if (totalPlayers > MIX_AMERICANO_REQUIRED_PLAYERS) {
-          setPlayerInputError(`Mix Americano only available for ${MIX_AMERICANO_REQUIRED_PLAYERS} players. You already have (${mixPlayers.length} players).`);
+          setPlayerInputError(`Mix Americano only available for ${MIX_AMERICANO_REQUIRED_PLAYERS} players.`);
           return;
         }
 
@@ -267,7 +267,7 @@ export default function CreateTournament() {
 
       setPlayerInputError("");
       setPlayerInput("");
-      toast.success(`Added ${newPlayerNames.length} player(s)!`);
+      //toast.success(`Added ${newPlayerNames.length} player(s)!`);
     }
   };
 
@@ -829,7 +829,7 @@ export default function CreateTournament() {
               <Button
                 type="submit"
                 variant={"default"}
-                className="w-full text-base h-12 bg-clx-bg-accent text-white font-bold rounded-lg hover:bg-blue-700"
+                className="w-full text-base h-12 bg-clx-bg-accent text-white font-bold rounded-lg hover:bg-blue-700 active:bg-blue-700"
               >
                 Create
               </Button>
