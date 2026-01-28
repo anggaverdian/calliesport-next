@@ -6,8 +6,7 @@ import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
 import AppBarTournamentDetail from "@/app/ui_pattern/AppBar/AppBarTournamentDetail";
-import ScoreCard from "@/app/ui_pattern/TournamentDetailPage/ScoreCard";
-import TournamentBanner from "@/app/ui_pattern/TournamentDetailPage/TournamentBanner";
+import { Skeleton } from "@/components/ui/skeleton";
 import electricIcon from "../../../public/electric.svg";
 import {
   Dialog,
@@ -34,14 +33,89 @@ import { toast } from "sonner";
 import { GenderMale, GenderFemale } from "@phosphor-icons/react";
 import { MIX_AMERICANO_TOTAL_ROUNDS } from "@/utils/MixAmericanoTournament";
 
+// Skeleton for ScoreCard loading (includes resting players)
+function ScoreCardSkeleton() {
+  return (
+    <>
+      <div className="rounded-2xl border border-neutral-200 p-4 space-y-4">
+        {/* Team A */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="w-14 h-12 rounded-lg" />
+        </div>
+        {/* VS divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-neutral-200" />
+          <Skeleton className="h-5 w-8" />
+          <div className="flex-1 h-px bg-neutral-200" />
+        </div>
+        {/* Team B */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="w-14 h-12 rounded-lg" />
+        </div>
+      </div>
+      {/* Resting players skeleton */}
+      <div className="flex items-center justify-center gap-2">
+        <Skeleton className="h-4 w-10" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+    </>
+  );
+}
+
+// Skeleton for LeaderboardTable loading
+function LeaderboardSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* Table header */}
+      <div className="flex items-center gap-4 px-4 py-3 border-b">
+        <Skeleton className="h-4 w-8" />
+        <Skeleton className="h-4 w-24 flex-1" />
+        <Skeleton className="h-4 w-12" />
+        <Skeleton className="h-4 w-12" />
+      </div>
+      {/* Table rows */}
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-4 py-3">
+          <Skeleton className="h-5 w-6" />
+          <Skeleton className="h-5 w-32 flex-1" />
+          <Skeleton className="h-5 w-10" />
+          <Skeleton className="h-5 w-10" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Lazy load heavy components
+const RoundContent = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/RoundContent"),
+  { ssr: false, loading: () => <ScoreCardSkeleton /> }
+);
+const TournamentBanner = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/TournamentBanner"),
+  { ssr: false }
+);
 const ScoreInputModal = dynamic(
   () => import("@/app/ui_pattern/TournamentDetailPage/ScoreInputModal"),
   { ssr: false }
 );
 const LeaderboardTable = dynamic(
   () => import("@/app/ui_pattern/TournamentDetailPage/LeaderboardTable"),
-  { ssr: false }
+  { ssr: false, loading: () => <LeaderboardSkeleton /> }
 );
 const EditTournamentInfoDrawer = dynamic(
   () => import("@/app/ui_pattern/TournamentDetailPage/EditTournamentInfoDrawer"),
@@ -397,38 +471,26 @@ export default function TournamentDetailPage() {
           {/* Match content */}
           {currentRoundData && currentRoundData.matches.length > 0 && (
             <div className="flex flex-col gap-3 px-2 py-10">
-
-
-              {/* Score card */}
-              <ScoreCard
+              <RoundContent
                 match={currentRoundData.matches[0]}
+                restingPlayers={(() => {
+                  // For Mix Americano, calculate resting players from match data
+                  // since restingPlayers array is always empty
+                  let resting = currentRoundData.restingPlayers;
+                  if (isMixAmericano && resting.length === 0) {
+                    const playingPlayers = new Set([
+                      ...currentRoundData.matches[0].teamA,
+                      ...currentRoundData.matches[0].teamB,
+                    ]);
+                    resting = tournament.players.filter(
+                      (player) => !playingPlayers.has(player)
+                    );
+                  }
+                  return resting;
+                })()}
                 onScoreClickA={() => handleScoreClick(0, "A")}
                 onScoreClickB={() => handleScoreClick(0, "B")}
               />
-
-              {/* Resting players */}
-              {(() => {
-                // For Mix Americano, calculate resting players from match data
-                // since restingPlayers array is always empty
-                let restingPlayers = currentRoundData.restingPlayers;
-                if (isMixAmericano && restingPlayers.length === 0) {
-                  const playingPlayers = new Set([
-                    ...currentRoundData.matches[0].teamA,
-                    ...currentRoundData.matches[0].teamB,
-                  ]);
-                  restingPlayers = tournament.players.filter(
-                    (player) => !playingPlayers.has(player)
-                  );
-                }
-                return restingPlayers.length > 0 ? (
-                  <div className="flex items-center justify-center gap-1.5 text-sm">
-                    <span className="font-semibold text-clx-text-default">Rest:</span>
-                    <span className="text-clx-text-secondary">
-                      {restingPlayers.join(", ")}
-                    </span>
-                  </div>
-                ) : null;
-              })()}
             </div>
           )}
         </div>
