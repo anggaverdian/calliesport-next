@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
 import AppBarTournamentDetail from "@/app/ui_pattern/AppBar/AppBarTournamentDetail";
 import ScoreCard from "@/app/ui_pattern/TournamentDetailPage/ScoreCard";
-import ScoreInputModal from "@/app/ui_pattern/TournamentDetailPage/ScoreInputModal";
-import LeaderboardTable from "@/app/ui_pattern/TournamentDetailPage/LeaderboardTable";
 import TournamentBanner from "@/app/ui_pattern/TournamentDetailPage/TournamentBanner";
 import electricIcon from "../../../public/electric.svg";
 import {
@@ -31,11 +30,27 @@ import {
   teamTypeNames,
   getPointTypeLabel,
 } from "@/utils/tournament";
-import EditTournamentInfoDrawer from "@/app/ui_pattern/TournamentDetailPage/EditTournamentInfoDrawer";
-import EditPlayersDrawer from "@/app/ui_pattern/TournamentDetailPage/EditPlayersDrawer";
 import { toast } from "sonner";
 import { GenderMale, GenderFemale } from "@phosphor-icons/react";
 import { MIX_AMERICANO_TOTAL_ROUNDS } from "@/utils/MixAmericanoTournament";
+
+// Lazy load heavy components
+const ScoreInputModal = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/ScoreInputModal"),
+  { ssr: false }
+);
+const LeaderboardTable = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/LeaderboardTable"),
+  { ssr: false }
+);
+const EditTournamentInfoDrawer = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/EditTournamentInfoDrawer"),
+  { ssr: false }
+);
+const EditPlayersDrawer = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/EditPlayersDrawer"),
+  { ssr: false }
+);
 
 export default function TournamentDetailPage() {
   const params = useParams();
