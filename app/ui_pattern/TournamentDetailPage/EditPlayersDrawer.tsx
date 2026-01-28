@@ -61,6 +61,9 @@ export default function EditPlayersDrawer({
   // Confirmation modal for save
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
+  // Track if add/remove actions were used (vs just renaming)
+  const [hasStructuralChange, setHasStructuralChange] = useState(false);
+
   // Reset form when drawer opens
   useEffect(() => {
     if (isOpen) {
@@ -68,28 +71,24 @@ export default function EditPlayersDrawer({
       setPlayerInput("");
       setPlayerInputError("");
       setOpenPopoverIndex(null);
+      setHasStructuralChange(false);
     }
   }, [isOpen, tournament]);
 
   // Calculate player changes for the confirmation modal
   const getPlayerChanges = () => {
     const originalPlayers = tournament.players;
-    const originalLower = originalPlayers.map(p => p.toLowerCase());
-    const currentLower = players.map(p => p.toLowerCase());
 
-    // First, calculate structural changes (adds/removes) based on name comparison
-    // This correctly handles cases where removes and adds result in same length
-    const added = players.filter(p => !originalLower.includes(p.toLowerCase()));
-    const removed = originalPlayers.filter(p => !currentLower.includes(p.toLowerCase()));
-
-    // If there are any adds or removes, treat them as structural changes
-    // The "renamed" player during structural changes will appear as both added (new name) and removed (old name)
-    if (added.length > 0 || removed.length > 0) {
+    // If add/remove actions were used, it's a structural change that requires regeneration
+    if (hasStructuralChange) {
+      const originalLower = originalPlayers.map(p => p.toLowerCase());
+      const currentLower = players.map(p => p.toLowerCase());
+      const added = players.filter(p => !originalLower.includes(p.toLowerCase()));
+      const removed = originalPlayers.filter(p => !currentLower.includes(p.toLowerCase()));
       return { added, removed, renames: [], hasPlayerCountChanged: true };
     }
 
-    // No structural changes (no adds/removes) - check for pure renames
-    // This only happens when same players exist in both lists (possibly with different casing or at different indices)
+    // No structural changes (only edit name used) - check for renames
     const renames: { oldName: string; newName: string }[] = [];
 
     // Check by index for name changes (same position, different exact name - e.g., case change or typo fix)
@@ -140,6 +139,7 @@ export default function EditPlayersDrawer({
     setPlayerInputError("");
     setPlayers([...players, ...newPlayerNames]);
     setPlayerInput("");
+    setHasStructuralChange(true);
   };
 
   const handleRemovePlayer = (index: number) => {
@@ -153,6 +153,7 @@ export default function EditPlayersDrawer({
 
     // Remove from local state
     setPlayers(players.filter((_, i) => i !== index));
+    setHasStructuralChange(true);
   };
 
   const handleSave = () => {
