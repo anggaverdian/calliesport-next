@@ -36,7 +36,7 @@ export default function TournamentItem({ tournament, onView, onDelete }: Tournam
 
   return (
     <div
-      className="bg-clx-bg-neutral-subtle border border-clx-border-subtle flex gap-6 items-center px-5 py-3 rounded-xl w-full cursor-pointer hover:bg-clx-bg-neutral-hover transition-colors"
+      className="bg-clx-bg-neutral-subtle border border-clx-border-subtle flex gap-6 items-center px-5 py-3 rounded-xl w-full cursor-pointer hover:bg-clx-bg-neutral-hover transition-colors active:bg-clx-bg-neutral-hover"
       onClick={() => onView(tournament.id)}
     >
       {/* Team type icon */}
