@@ -29,7 +29,10 @@ import {
   calculateRounds,
   isTeamTypeSupported,
   teamTypeNames,
+  getPointTypeLabel,
 } from "@/utils/tournament";
+import EditTournamentInfoDrawer from "@/app/ui_pattern/TournamentDetailPage/EditTournamentInfoDrawer";
+import EditPlayersDrawer from "@/app/ui_pattern/TournamentDetailPage/EditPlayersDrawer";
 import { toast } from "sonner";
 import { GenderMale, GenderFemale } from "@phosphor-icons/react";
 import { MIX_AMERICANO_TOTAL_ROUNDS } from "@/utils/MixAmericanoTournament";
@@ -425,7 +428,7 @@ export default function TournamentDetailPage() {
 
       {activeTab === "details" && (
         <div className="flex-1 p-4">
-          <DetailsTab tournament={tournament} />
+          <DetailsTab tournament={tournament} onTournamentUpdate={handleTournamentUpdate} />
         </div>
       )}
 
@@ -481,7 +484,16 @@ export default function TournamentDetailPage() {
 }
 
 // Details Tab Component
-function DetailsTab({ tournament }: { tournament: Tournament }) {
+function DetailsTab({
+  tournament,
+  onTournamentUpdate
+}: {
+  tournament: Tournament;
+  onTournamentUpdate: (updatedTournament: Tournament) => void;
+}) {
+  const [isEditInfoOpen, setIsEditInfoOpen] = useState(false);
+  const [isEditPlayersOpen, setIsEditPlayersOpen] = useState(false);
+
   const completedRounds = tournament.rounds.filter(r =>
     r.matches.every(m => m.isCompleted)
   ).length;
@@ -497,45 +509,68 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
     : [];
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white px-1 space-y-3 border-b-1 pb-6">
-        <h3 className="font-semibold text-clx-text-default">Tournament Info</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+    <div className="space-y-8">
+      {/* Tournament Info Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-clx-text-default">Tournament info</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditInfoOpen(true)}
+            className="h-9 px-3 text-sm font-semibold border-clx-border-textfield"
+            disabled={tournament.isEnded}
+          >
+            Edit
+          </Button>
+        </div>
+
+        <div className="divide-y divide-clx-border-default">
+          <div className="flex justify-between py-3 text-sm">
             <span className="text-clx-text-secondary">Name</span>
-            <span className="text-clx-text-default font-medium">{tournament.name}</span>
+            <span className="text-clx-text-default">{tournament.name}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-clx-text-secondary">Game Type</span>
-            <span className="text-clx-text-default font-medium">{teamTypeNames[tournament.teamType]}</span>
+          <div className="flex justify-between py-3 text-sm">
+            <span className="text-clx-text-secondary">Gameplay</span>
+            <span className="text-clx-text-default">{teamTypeNames[tournament.teamType]}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-clx-text-secondary">Total Players</span>
-            <span className="text-clx-text-default font-medium">{tournament.players.length}</span>
+          <div className="flex justify-between py-3 text-sm">
+            <span className="text-clx-text-secondary">Point match</span>
+            <span className="text-clx-text-default">{getPointTypeLabel(tournament.pointType)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-clx-text-secondary">Total Rounds</span>
-            <span className="text-clx-text-default font-medium">{tournament.rounds.length}</span>
+          <div className="flex justify-between py-3 text-sm">
+            <span className="text-clx-text-secondary">Total player</span>
+            <span className="text-clx-text-default">{tournament.players.length}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-clx-text-secondary">Completed Rounds</span>
-            <span className="text-clx-text-default font-medium">{completedRounds}</span>
+          <div className="flex justify-between py-3 text-sm">
+            <span className="text-clx-text-secondary">Total round</span>
+            <span className="text-clx-text-default">{tournament.rounds.length}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-clx-text-secondary">Point Type</span>
-            <span className="text-clx-text-default font-medium">
-              {tournament.pointType === "21" ? "21 points" :
-               tournament.pointType === "16" ? "16 points" :
-               tournament.pointType === "best4" ? "Best of 4" : "Best of 5"}
-            </span>
+          <div className="flex justify-between py-3 text-sm">
+            <span className="text-clx-text-secondary">Complete round</span>
+            <span className="text-clx-text-default">{completedRounds}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg px-1 py-2 space-y-3">
-        <div className="w-auto pb-1">
-          <h3 className="font-semibold text-clx-text-default">Players</h3>
-          <span className="text-sm">Total player: {tournament.players.length}</span>
+      {/* Players Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-clx-text-default">Players</h3>
+            <span className="text-xs text-clx-text-secondary">
+              Total <span className="text-clx-text-default">{tournament.players.length} players</span> added
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 px-3 text-sm font-semibold border-clx-border-textfield"
+            disabled={tournament.isEnded || isMixAmericano}
+            onClick={() => setIsEditPlayersOpen(true)}
+          >
+            Edit
+          </Button>
         </div>
 
         {/* Mix Americano: Show players grouped by gender */}
@@ -553,7 +588,7 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
                 {menPlayers.map((player, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
+                    className="px-3 py-1.5 text-sm bg-clx-bg-neutral-bold rounded text-clx-text-dark-subtle"
                   >
                     {player}
                   </span>
@@ -573,7 +608,7 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
                 {womenPlayers.map((player, index) => (
                   <span
                     key={index}
-                    className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
+                    className="px-3 py-1.5 text-sm bg-clx-bg-neutral-bold rounded text-clx-text-dark-subtle"
                   >
                     {player}
                   </span>
@@ -587,7 +622,7 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
             {tournament.players.map((player, index) => (
               <span
                 key={index}
-                className="px-3 py-1 text-sm bg-clx-bg-neutral-bold rounded-md text-clx-text-default"
+                className="px-3 py-1.5 text-sm bg-clx-bg-neutral-bold rounded text-clx-text-dark-subtle"
               >
                 {player}
               </span>
@@ -595,6 +630,22 @@ function DetailsTab({ tournament }: { tournament: Tournament }) {
           </div>
         )}
       </div>
+
+      {/* Edit Tournament Info Drawer */}
+      <EditTournamentInfoDrawer
+        isOpen={isEditInfoOpen}
+        onClose={() => setIsEditInfoOpen(false)}
+        tournament={tournament}
+        onUpdate={onTournamentUpdate}
+      />
+
+      {/* Edit Players Drawer */}
+      <EditPlayersDrawer
+        isOpen={isEditPlayersOpen}
+        onClose={() => setIsEditPlayersOpen(false)}
+        tournament={tournament}
+        onUpdate={onTournamentUpdate}
+      />
     </div>
   );
 }

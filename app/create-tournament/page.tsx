@@ -483,18 +483,18 @@ export default function CreateTournament() {
                         {pointOptions.map((point) => {
                           const isSelected = field.value === point.id;
                           return (
-                            <button
-                              type="button"
+                            <Badge
                               key={point.id}
+                              variant="outline"
                               onClick={() => field.onChange(point.id)}
-                              className={`shrink-0 whitespace-nowrap px-3 py-1.5 h-auto rounded-full text-sm transition-all ${
+                              className={`shrink-0 whitespace-nowrap px-3 py-1.5 h-auto text-sm cursor-pointer ${
                                 isSelected
-                                  ? "bg-clx-bg-neutral-bold text-clx-text-default font-semibold border-1 border-neutral-200"
-                                  : "bg-white text-clx-text-secondary font-normal border-1 border-neutral-200 hover:bg-clx-bg-neutral-hover"
+                                  ? "bg-clx-bg-neutral-bold text-clx-text-default font-semibold border-neutral-200"
+                                  : "bg-white text-clx-text-secondary font-normal border-neutral-200 hover:bg-clx-bg-neutral-hover"
                               }`}
                             >
                               {point.label}
-                            </button>
+                            </Badge>
                           );
                         })}
                       </div>

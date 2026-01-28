@@ -159,7 +159,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
 
       {/* Player Summary Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="bg-white max-h-[85vh]" showHandle={true}>
+        <DrawerContent className="bg-white h-screen" showHandle={true}>
           <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
             <div className="flex items-center justify-between invisible">
               <DrawerTitle className="text-base font-bold text-clx-text-default">
@@ -174,9 +174,9 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           {/* Swap content based on selectedPairPlayer */}
           {selectedPairPlayer ? (
             // Detail View - Shows rounds with specific pair
-            <div className="flex-1 overflow-auto p-4 space-y-4">
+            <div className="flex-1 overflow-auto p-4 space-y-8 user-drag-none pb-40">
               {/* Header with back button and player names */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-12">
                 <button
                   onClick={handleBackToSummary}
                   className="text-clx-text-secondary hover:text-clx-text-default"
@@ -184,16 +184,28 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                 >
                   <ArrowLeftIcon size={24} />
                 </button>
-                <div className="flex-1 flex items-center justify-center gap-2">
-                  <span className="text-lg font-bold text-clx-text-default">
-                    {selectedPlayer}
-                  </span>
-                  <span className="text-sm text-clx-text-default">&</span>
-                  <span className="text-lg font-bold text-clx-text-default">
-                    {selectedPairPlayer}
-                  </span>
-                </div>
+                <div><h3>Head to head overview</h3></div>
               </div>
+
+              <div className="flex justify-between">
+                  <div className="w-30 text-center border rounded-xl p-3">
+                    <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
+                      <UserIcon size={16} weight="fill" className="text-clx-icon-primary" />
+                    </div>
+                    <span className="block text-base font-medium text-clx-text-default truncate">
+                      {selectedPlayer}
+                    </span>
+                  </div>
+                  <div className="w-30 text-center border rounded-xl p-3">
+                    <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
+                      <UserIcon size={16} weight="fill" className="text-clx-icon-primary" />
+                    </div>
+                    <span className="block text-base font-medium text-clx-text-default truncate">
+                      {selectedPairPlayer}
+                    </span>
+                  </div>
+              </div>
+
 
               {/* Partner up section */}
               {pairRounds.partnerRounds.length > 0 && (
@@ -231,7 +243,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
             </div>
           ) : (
             // Summary View - Shows pairing stats table
-            <div className="flex-1 overflow-auto p-4 space-y-6">
+            <div className="flex-1 overflow-auto p-4 space-y-4">
               <h2>Game summary</h2>
               {/* Player Name Header */}
               <div className="flex items-center gap-3 border-1 rounded-xl p-3">

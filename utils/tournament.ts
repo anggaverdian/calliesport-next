@@ -1228,6 +1228,51 @@ export function updateTournament(tournament: Tournament): void {
   }
 }
 
+// Check if any round has been scored
+export function hasAnyScoredRound(tournament: Tournament): boolean {
+  return tournament.rounds.some(round =>
+    round.matches.some(match => match.isCompleted)
+  );
+}
+
+// Update tournament info (name and point type)
+// Returns the updated tournament, or null if not found
+// If pointType changes and there are scored rounds, all scores will be reset
+export function updateTournamentInfo(
+  tournamentId: string,
+  name: string,
+  pointType: string,
+  resetScores: boolean = false
+): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Sanitize the name
+  const sanitizedName = sanitizeString(name);
+
+  // Update name
+  tournament.name = sanitizedName;
+
+  // If point type changed and we need to reset scores
+  if (resetScores || tournament.pointType !== pointType) {
+    // Reset all scores if there are any scored rounds and point type changed
+    if (tournament.pointType !== pointType && hasAnyScoredRound(tournament)) {
+      tournament.rounds.forEach(round => {
+        round.matches.forEach(match => {
+          match.scoreA = null;
+          match.scoreB = null;
+          match.isCompleted = false;
+        });
+      });
+    }
+    tournament.pointType = pointType;
+  }
+
+  updateTournament(tournament);
+  return tournament;
+}
+
 // Update match score
 export function updateMatchScore(
   tournamentId: string,
@@ -1386,6 +1431,137 @@ export function endTournament(tournamentId: string): Tournament | null {
   if (tournament.isEnded) return null;
 
   tournament.isEnded = true;
+  updateTournament(tournament);
+  return tournament;
+}
+
+// ============================================================================
+// PLAYER MANAGEMENT FUNCTIONS
+// ============================================================================
+
+// Rename a player in the tournament
+// Updates player name in all rounds (scored or not)
+export function renamePlayer(
+  tournamentId: string,
+  oldName: string,
+  newName: string
+): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Sanitize the new name
+  const sanitizedNewName = sanitizeString(newName);
+
+  // Check if old name exists
+  const playerIndex = tournament.players.findIndex(p => p === oldName);
+  if (playerIndex === -1) return null;
+
+  // Check if new name is different
+  if (oldName === sanitizedNewName) return tournament;
+
+  // Check for duplicate names (case-insensitive)
+  const isDuplicate = tournament.players.some(
+    (p, i) => i !== playerIndex && p.toLowerCase() === sanitizedNewName.toLowerCase()
+  );
+  if (isDuplicate) return null;
+
+  // Update player name in players array
+  tournament.players[playerIndex] = sanitizedNewName;
+
+  // Update player name in all rounds
+  tournament.rounds.forEach(round => {
+    round.matches.forEach(match => {
+      // Update in teamA
+      match.teamA = match.teamA.map(p => p === oldName ? sanitizedNewName : p);
+      // Update in teamB
+      match.teamB = match.teamB.map(p => p === oldName ? sanitizedNewName : p);
+    });
+    // Update in resting players
+    round.restingPlayers = round.restingPlayers.map(p => p === oldName ? sanitizedNewName : p);
+  });
+
+  // Update playerGenders if exists (for Mix Americano)
+  if (tournament.playerGenders && tournament.playerGenders[oldName]) {
+    tournament.playerGenders[sanitizedNewName] = tournament.playerGenders[oldName];
+    delete tournament.playerGenders[oldName];
+  }
+
+  updateTournament(tournament);
+  return tournament;
+}
+
+// Add new players to a tournament and regenerate rounds
+export function addPlayersToTournament(
+  tournamentId: string,
+  newPlayers: string[]
+): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Only allow for Standard Americano (not Mix Americano which has fixed player count)
+  if (tournament.teamType !== "standard") return null;
+
+  // Sanitize new player names
+  const sanitizedNewPlayers = sanitizeStringArray(newPlayers);
+
+  // Check player limits
+  const totalPlayers = tournament.players.length + sanitizedNewPlayers.length;
+  if (totalPlayers > MAX_PLAYERS) return null;
+
+  // Check for duplicate names
+  const existingLowerCase = tournament.players.map(p => p.toLowerCase());
+  const hasDuplicates = sanitizedNewPlayers.some(
+    p => existingLowerCase.includes(p.toLowerCase())
+  );
+  if (hasDuplicates) return null;
+
+  // Add new players
+  tournament.players = [...tournament.players, ...sanitizedNewPlayers];
+
+  // Regenerate all rounds
+  const newRounds = generateTournamentRounds(tournament.players);
+  tournament.rounds = newRounds;
+
+  // Reset tournament state
+  tournament.hasExtended = false;
+  tournament.isEnded = false;
+
+  updateTournament(tournament);
+  return tournament;
+}
+
+// Remove a player from a tournament and regenerate rounds
+export function removePlayerFromTournament(
+  tournamentId: string,
+  playerName: string
+): Tournament | null {
+  const tournament = getTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Only allow for Standard Americano (not Mix Americano which has fixed player count)
+  if (tournament.teamType !== "standard") return null;
+
+  // Check player limits
+  if (tournament.players.length <= MIN_PLAYERS) return null;
+
+  // Check if player exists
+  const playerIndex = tournament.players.findIndex(p => p === playerName);
+  if (playerIndex === -1) return null;
+
+  // Remove player
+  tournament.players = tournament.players.filter(p => p !== playerName);
+
+  // Regenerate all rounds
+  const newRounds = generateTournamentRounds(tournament.players);
+  tournament.rounds = newRounds;
+
+  // Reset tournament state
+  tournament.hasExtended = false;
+  tournament.isEnded = false;
+
   updateTournament(tournament);
   return tournament;
 }
