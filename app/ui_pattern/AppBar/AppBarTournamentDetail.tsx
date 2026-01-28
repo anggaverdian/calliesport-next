@@ -296,10 +296,10 @@ export default function AppBarTournamentDetail({
                     Adjust lineup
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    onSelect={() => setShowEndConfirmation(true)}
                     className="py-2 active:bg-neutral-200"
                     disabled={isTournamentCompleted}
                   >
-
                     <CheckCircleIcon size={24} className={isTournamentCompleted ? "text-clx-icon-disabled" : "text-clx-icon-default"} />
                     End tournament
                   </DropdownMenuItem>

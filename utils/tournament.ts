@@ -26,6 +26,7 @@ export interface Tournament {
   createdAt: string;
   hasExtended?: boolean;
   isEnded?: boolean;
+  completedAt?: string;
 }
 
 export interface Match {
@@ -1431,6 +1432,7 @@ export function endTournament(tournamentId: string): Tournament | null {
   if (tournament.isEnded) return null;
 
   tournament.isEnded = true;
+  tournament.completedAt = new Date().toISOString();
   updateTournament(tournament);
   return tournament;
 }

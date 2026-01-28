@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AppBarHome from "./ui_pattern/AppBar/AppBarHome";
+import AppBarHome, { HomeTab } from "./ui_pattern/AppBar/AppBarHome";
 import TournamentItem from "./ui_pattern/TournamentItem/TournamentItem";
+import HistoryTournamentItem from "./ui_pattern/HistoryTournamentItem/HistoryTournamentItem";
 import { PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -16,11 +17,16 @@ export default function Home() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<HomeTab>("tournaments");
 
   useEffect(() => {
     setTournaments(getTournaments());
     setIsLoading(false);
   }, []);
+
+  // Filter tournaments based on active tab
+  const activeTournaments = tournaments.filter((t) => !t.isEnded);
+  const completedTournaments = tournaments.filter((t) => t.isEnded);
 
   const handleView = (id: string) => {
     // TODO: Navigate to tournament detail page
@@ -37,7 +43,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <main className="container w-auto">
-        <AppBarHome />
+        <AppBarHome activeTab={activeTab} onTabChange={setActiveTab} />
         <div className="container p-4 py-20 text-center">
           <p className="text-clx-text-secondary">Loading...</p>
         </div>
@@ -45,49 +51,87 @@ export default function Home() {
     );
   }
 
+  // Get the tournaments to display based on active tab
+  const displayTournaments = activeTab === "tournaments" ? activeTournaments : completedTournaments;
+
+  // Empty state for tournaments tab
+  const renderTournamentsEmpty = () => (
+    <div className="p-4 space-y-6 text-center py-20">
+      <div className="space-y-2">
+        <div className="flex justify-center items-center">
+          <Image src={corgi_blank} alt="logo blank" width={203} height={140} />
+        </div>
+        <div>
+          <h3>No tournament yet</h3>
+          <span className="text-sm text-clx-text-secondary">
+            Your tournament will be displayed here
+          </span>
+        </div>
+      </div>
+      <Link href="/create-tournament">
+        <Button
+          size={"lg"}
+          variant="default"
+          className="bg-clx-bg-accent rounded-xl text-white font-bold py-5.5 pl-3! border-clx-bg-accent text-base active:bg-blue-700 active:scale-95 transition-all select-none"
+        >
+          <PlusIcon size={24} className="w-auto! h-auto!" />
+          Create tournament
+        </Button>
+      </Link>
+    </div>
+  );
+
+  // Empty state for history tab
+  const renderHistoryEmpty = () => (
+    <div className="p-4 space-y-6 text-center py-20">
+      <div className="space-y-2">
+
+        <div className="px-8">
+          <h3>No completed tournament</h3>
+          <span className="text-sm text-clx-text-secondary">
+            Your completed tournaments will be displayed here
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <main className="container relative w-auto min-h-screen flex flex-col">
-      <AppBarHome />
+      <AppBarHome activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {tournaments.length === 0 ? (
-        // Empty state
-        <div className="p-4 space-y-6 text-center py-20">
-          <div className="space-y-2">
-            <div className="flex justify-center items-center">
-              <Image src={corgi_blank} alt="logo blank" width={203} height={140} />
-            </div>
-            <div>
-              <h3>No tournament yet</h3>
-              <span className="text-sm text-clx-text-secondary">
-                Your tournament will be displayed here
-              </span>
-            </div>
-          </div>
-          <Link href="/create-tournament">
-            <Button
-              size={"lg"}
-              variant="default"
-              className="bg-clx-bg-accent rounded-xl text-white font-bold py-5.5 pl-3! border-clx-bg-accent text-base active:bg-blue-700 active:scale-95 transition-all select-none"
-            >
-              <PlusIcon size={24} className="w-auto! h-auto!" />
-              Create tournament
-            </Button>
-          </Link>
-        </div>
+      {displayTournaments.length === 0 ? (
+        // Empty state based on active tab
+        activeTab === "tournaments" ? renderTournamentsEmpty() : renderHistoryEmpty()
       ) : (
         // Tournament list
         <>
           <div className="flex-1 p-4 space-y-3">
-            {[...tournaments]
-              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-              .map((tournament) => (
-                <TournamentItem
-                  key={tournament.id}
-                  tournament={tournament}
-                  onView={handleView}
-                  onDelete={handleDelete}
-                />
-              ))}
+            {activeTab === "tournaments" ? (
+              // Active tournaments
+              [...activeTournaments]
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((tournament) => (
+                  <TournamentItem
+                    key={tournament.id}
+                    tournament={tournament}
+                    onView={handleView}
+                    onDelete={handleDelete}
+                  />
+                ))
+            ) : (
+              // Completed tournaments (history)
+              [...completedTournaments]
+                .sort((a, b) => new Date(b.completedAt || b.createdAt).getTime() - new Date(a.completedAt || a.createdAt).getTime())
+                .map((tournament) => (
+                  <HistoryTournamentItem
+                    key={tournament.id}
+                    tournament={tournament}
+                    onView={handleView}
+                    onDelete={handleDelete}
+                  />
+                ))
+            )}
           </div>
 
           {/* Floating create button */}

@@ -1,10 +1,17 @@
 import Image from "next/image";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge"
-import { MagnifyingGlassIcon, DotsThreeOutlineVerticalIcon, MoonIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, MoonIcon } from "@phosphor-icons/react";
 import Brand_Logo from "../../../public/calliesport-logo.svg";
 
-export default function AppBarHome() {
+export type HomeTab = "tournaments" | "history";
+
+interface AppBarHomeProps {
+  activeTab?: HomeTab;
+  onTabChange?: (tab: HomeTab) => void;
+}
+
+export default function AppBarHome({ activeTab = "tournaments", onTabChange }: AppBarHomeProps) {
   return (
     <nav className="container w-full sticky top-0 z-50 bg-white">
         <div className="flex items-center px-4 pt-4 pb-2">
@@ -27,11 +34,10 @@ export default function AppBarHome() {
           </div>
         </div>
         <div className="px-4 pt-3 pb-2">
-            <Tabs defaultValue="account" className="w-auto">
+            <Tabs value={activeTab} onValueChange={(value) => onTabChange?.(value as HomeTab)} className="w-auto">
                 <TabsList className="bg-white gap-2">
-                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5"  value="account">Tournaments</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5"  value="password">History</TabsTrigger>
-                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5 invisible"  value="history">Rank</TabsTrigger>
+                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5" value="tournaments">Tournaments</TabsTrigger>
+                    <TabsTrigger className="data-[state=active]:bg-clx-bg-dark text-clx-text-white data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default px-4 py-1.5" value="history">History</TabsTrigger>
                 </TabsList>
             </Tabs>
         </div>

@@ -1,64 +1,56 @@
 "use client";
 
-import Image from "next/image";
 import { DotsThreeIcon } from "@phosphor-icons/react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Tournament, teamTypeNames, calculateRounds, TeamType, getPointTypeLabel } from "@/utils/tournament";
+import { Tournament, calculateRounds, getPointTypeLabel } from "@/utils/tournament";
 
-// SVG imports for team type icons
-import thunderIcon from "../../../public/thunder.svg";
-import chartIcon from "../../../public/charts.svg";
-import upIcon from "../../../public/Up.svg";
-import starIcon from "../../../public/Star.svg";
-
-// Team type icon mapping
-const teamTypeIcons: Record<TeamType, string> = {
-  standard: chartIcon,
-  mix: thunderIcon,
-  team: upIcon,
-  mexicano: starIcon,
-};
-
-interface TournamentItemProps {
+interface HistoryTournamentItemProps {
   tournament: Tournament;
   onView: (id: string) => void;
   onDelete: (id: string) => void;
-};
+}
 
-export default function TournamentItem({ tournament, onView, onDelete }: TournamentItemProps) {
+function formatCompletedDate(dateString?: string): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default function HistoryTournamentItem({
+  tournament,
+  onView,
+  onDelete,
+}: HistoryTournamentItemProps) {
   const rounds = calculateRounds(tournament.players.length);
-  const icon = teamTypeIcons[tournament.teamType];
-  const pointType = tournament.pointType;
 
   return (
     <div
       className="bg-clx-bg-neutral-subtle border border-clx-border-subtle flex gap-6 items-center px-5 py-3 rounded-xl w-full cursor-pointer hover:bg-clx-bg-neutral-hover transition-colors active:bg-clx-bg-neutral-hover"
       onClick={() => onView(tournament.id)}
     >
-      {/* Team type icon */}
-      <div className="shrink-0 size-6">
-        <Image
-          src={icon}
-          width={24}
-          height={24}
-          alt={teamTypeNames[tournament.teamType]}
-        />
-      </div>
-
       {/* Tournament info */}
       <div className="flex-1 min-w-0">
-        <p className="text-lg font-semibold text-clx-text-default truncate tracking-tight mb-0.5">
+        <p className="text-sm font-medium text-clx-text-default truncate tracking-tight mb-0.5">
           {tournament.name}
         </p>
-        <div className="flex gap-1.5 text-xs text-clx-text-secondary">
-          <span>{rounds} rounds</span><span className="text-stone-300">|</span>
-          <span>{tournament.players.length} players</span><span className="text-stone-300">|</span>
+        <div className="flex gap-1.5 text-xs text-clx-text-secondary mb-2">
+          <span>{rounds} rounds</span>
+          <span className="text-stone-300">|</span>
+          <span>{tournament.players.length} players</span>
+          <span className="text-stone-300">|</span>
           <span>{getPointTypeLabel(tournament.pointType)}</span>
         </div>
+        <p className="text-xs text-clx-text-success">
+          Completed on {formatCompletedDate(tournament.completedAt)}
+        </p>
       </div>
 
       {/* Action popover */}
@@ -68,7 +60,6 @@ export default function TournamentItem({ tournament, onView, onDelete }: Tournam
             type="button"
             className="shrink-0 p-2 rounded-lg hover:bg-clx-bg-neutral-bold active:bg-clx-bg-neutral-hover transition-colors data-[state=open]:bg-clx-bg-neutral-hover"
             onClick={(e) => e.stopPropagation()}
-            
           >
             <DotsThreeIcon size={24} weight="bold" className="text-clx-icon-dark" />
           </button>
