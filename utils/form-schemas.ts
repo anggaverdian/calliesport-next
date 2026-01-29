@@ -11,14 +11,14 @@ export type MixPlayerFormData = z.infer<typeof MixPlayerSchema>;
 export const createTournamentSchema = z.object({
   tournamentName: z
     .string()
-    .min(4, "Tournament name must be 1 to 64 characters")
-    .max(64, "Tournament name must be 1 to 64 characters"),
+    .min(4, "Tournament name must be 3 to 64 characters")
+    .max(64, "Tournament name must be 3 to 64 characters"),
   teamType: z.string(),
   pointType: z.string(),
   players: z
     .array(z.string())
     .min(4, "Add at least 4 players")
-    .max(10, "Maximum 10 players allowed"),
+    .max(8, "Maximum 8 players allowed"),
   // Mix Americano specific: player genders
   mixPlayers: z
     .array(MixPlayerSchema)

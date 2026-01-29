@@ -1,5 +1,5 @@
 // Mix Americano Tournament Utilities
-// For 8 players (4 Men, 4 Women) with perfect matrix pairing
+// For 6 players (3 Men, 3 Women) or 8 players (4 Men, 4 Women) with perfect matrix pairing
 
 import { TournamentsArraySchema, sanitizeString, sanitizeStringArray } from "./form-schemas";
 
@@ -53,7 +53,8 @@ interface ScheduleEntry {
   away: { m: string; w: string };
 }
 
-const SCHEDULE_DATA: ScheduleEntry[] = [
+// Schedule for 8 players (4 men, 4 women) - 24 rounds
+const SCHEDULE_DATA_8_PLAYERS: ScheduleEntry[] = [
   { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
   { round: 2,  home: { m: "M3", w: "W3" }, away: { m: "M4", w: "W4" } },
   { round: 3,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W1" } },
@@ -80,11 +81,39 @@ const SCHEDULE_DATA: ScheduleEntry[] = [
   { round: 24, home: { m: "M2", w: "W4" }, away: { m: "M3", w: "W1" } },
 ];
 
-// Constants
-export const MIX_AMERICANO_REQUIRED_PLAYERS = 8;
-export const MIX_AMERICANO_REQUIRED_MEN = 4;
-export const MIX_AMERICANO_REQUIRED_WOMEN = 4;
-export const MIX_AMERICANO_TOTAL_ROUNDS = 24;
+// Schedule for 6 players (3 men, 3 women) - 9 rounds
+const SCHEDULE_DATA_6_PLAYERS: ScheduleEntry[] = [
+  // --- PARTNER BLOCK 1 (M1-W1, M2-W2, M3-W3) ---
+  { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
+  { round: 2,  home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W3" } },
+  { round: 3,  home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W3" } },
+
+  // --- PARTNER BLOCK 2 (M1-W2, M2-W3, M3-W1) ---
+  { round: 4,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W3" } },
+  { round: 5,  home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W1" } },
+  { round: 6,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W1" } },
+
+  // --- PARTNER BLOCK 3 (M1-W3, M2-W1, M3-W2) ---
+  { round: 7,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W1" } },
+  { round: 8,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W2" } },
+  { round: 9,  home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W2" } },
+];
+
+// Constants for 6 players
+export const MIX_AMERICANO_6_PLAYERS = 6;
+export const MIX_AMERICANO_6_MEN = 3;
+export const MIX_AMERICANO_6_WOMEN = 3;
+export const MIX_AMERICANO_6_ROUNDS = 9;
+export const MIX_AMERICANO_6_EXTENDED_ROUNDS = 9; // Add 9 more rounds when extending
+
+// Constants for 8 players
+export const MIX_AMERICANO_8_PLAYERS = 8;
+export const MIX_AMERICANO_8_MEN = 4;
+export const MIX_AMERICANO_8_WOMEN = 4;
+export const MIX_AMERICANO_8_ROUNDS = 24;
+
+// Supported player counts
+export const MIX_AMERICANO_ALLOWED_PLAYERS = [6, 8];
 
 // Local storage key
 const STORAGE_KEY = "calliesport_tournaments";
@@ -115,32 +144,40 @@ function shuffleArray<T>(array: T[]): T[] {
 // ============================================================================
 
 /**
- * Validates that the players list has exactly 4 men and 4 women
+ * Validates that the players list has valid configuration for Mix Americano
+ * Supports: 6 players (3M + 3W) or 8 players (4M + 4W)
  */
 export function validateMixAmericanoPlayers(
   players: MixPlayer[]
 ): { valid: boolean; error?: string } {
-  if (players.length !== MIX_AMERICANO_REQUIRED_PLAYERS) {
+  const playerCount = players.length;
+
+  // Check if player count is valid (6 or 8)
+  if (!MIX_AMERICANO_ALLOWED_PLAYERS.includes(playerCount)) {
     return {
       valid: false,
-      error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_PLAYERS} players`,
+      error: `Mix Americano requires exactly 6 or 8 players (currently ${playerCount})`,
     };
   }
 
   const men = players.filter((p) => p.gender === "male");
   const women = players.filter((p) => p.gender === "female");
 
-  if (men.length !== MIX_AMERICANO_REQUIRED_MEN) {
+  // Determine required counts based on player count
+  const requiredMen = playerCount === 6 ? MIX_AMERICANO_6_MEN : MIX_AMERICANO_8_MEN;
+  const requiredWomen = playerCount === 6 ? MIX_AMERICANO_6_WOMEN : MIX_AMERICANO_8_WOMEN;
+
+  if (men.length !== requiredMen) {
     return {
       valid: false,
-      error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_MEN} men (currently ${men.length})`,
+      error: `Mix Americano with ${playerCount} players requires exactly ${requiredMen} men (currently ${men.length})`,
     };
   }
 
-  if (women.length !== MIX_AMERICANO_REQUIRED_WOMEN) {
+  if (women.length !== requiredWomen) {
     return {
       valid: false,
-      error: `Mix Americano requires exactly ${MIX_AMERICANO_REQUIRED_WOMEN} women (currently ${women.length})`,
+      error: `Mix Americano with ${playerCount} players requires exactly ${requiredWomen} women (currently ${women.length})`,
     };
   }
 
@@ -149,7 +186,7 @@ export function validateMixAmericanoPlayers(
 
 /**
  * Generate tournament rounds for Mix Americano using the perfect matrix
- * Players are randomly assigned to M1-M4 and W1-W4 positions
+ * Players are randomly assigned to M1-M3/M4 and W1-W3/W4 positions based on count
  */
 export function generateMixAmericanoRounds(players: MixPlayer[]): MixRound[] {
   const validation = validateMixAmericanoPlayers(players);
@@ -162,22 +199,23 @@ export function generateMixAmericanoRounds(players: MixPlayer[]): MixRound[] {
   const men = shuffleArray(players.filter((p) => p.gender === "male"));
   const women = shuffleArray(players.filter((p) => p.gender === "female"));
 
-  // Create mapping from M1-M4 and W1-W4 to actual player names
-  const playerMap: Record<string, string> = {
-    M1: men[0].name,
-    M2: men[1].name,
-    M3: men[2].name,
-    M4: men[3].name,
-    W1: women[0].name,
-    W2: women[1].name,
-    W3: women[2].name,
-    W4: women[3].name,
-  };
+  // Select the appropriate schedule based on player count
+  const playerCount = players.length;
+  const scheduleData = playerCount === 6 ? SCHEDULE_DATA_6_PLAYERS : SCHEDULE_DATA_8_PLAYERS;
+
+  // Create mapping from M1-Mn and W1-Wn to actual player names
+  const playerMap: Record<string, string> = {};
+  men.forEach((player, index) => {
+    playerMap[`M${index + 1}`] = player.name;
+  });
+  women.forEach((player, index) => {
+    playerMap[`W${index + 1}`] = player.name;
+  });
 
   // Generate rounds from schedule
   const rounds: MixRound[] = [];
 
-  for (const entry of SCHEDULE_DATA) {
+  for (const entry of scheduleData) {
     const match: MixMatch = {
       id: generateId(),
       teamA: [playerMap[entry.home.m], playerMap[entry.home.w]],
@@ -187,7 +225,7 @@ export function generateMixAmericanoRounds(players: MixPlayer[]): MixRound[] {
       isCompleted: false,
     };
 
-    // In Mix Americano with 8 players, all players play every round (no resting)
+    // In Mix Americano, all players play every round (no resting)
     // But we keep the restingPlayers array for compatibility
     rounds.push({
       roundNumber: entry.round,
@@ -200,10 +238,21 @@ export function generateMixAmericanoRounds(players: MixPlayer[]): MixRound[] {
 }
 
 /**
- * Calculate total rounds for Mix Americano
+ * Calculate total rounds for Mix Americano based on player count
  */
-export function calculateMixAmericanoRounds(): number {
-  return MIX_AMERICANO_TOTAL_ROUNDS;
+export function calculateMixAmericanoRounds(playerCount: number): number {
+  if (playerCount === 6) return MIX_AMERICANO_6_ROUNDS;
+  if (playerCount === 8) return MIX_AMERICANO_8_ROUNDS;
+  return 0;
+}
+
+/**
+ * Calculate additional rounds when extending Mix Americano (only 6 players supported)
+ */
+export function calculateMixAmericanoExtendedRounds(playerCount: number): number {
+  if (playerCount === 6) return MIX_AMERICANO_6_EXTENDED_ROUNDS;
+  // 8 players has 24 rounds which is already a complete cycle, no extension supported
+  return 0;
 }
 
 // ============================================================================
@@ -437,16 +486,20 @@ export function generateMixAmericanoRoundsWithFirstMatch(
     return [];
   }
 
-  // Get the first round entry to dynamically determine which template positions to use
-  const firstRound = SCHEDULE_DATA[0];
+  // Select the appropriate schedule based on player count
+  const playerCount = players.length;
+  const scheduleData = playerCount === 6 ? SCHEDULE_DATA_6_PLAYERS : SCHEDULE_DATA_8_PLAYERS;
 
-  // Build the player mapping dynamically based on the ACTUAL first round in SCHEDULE_DATA
+  // Get the first round entry to dynamically determine which template positions to use
+  const firstRound = scheduleData[0];
+
+  // Build the player mapping dynamically based on the ACTUAL first round in schedule
   // Team A (home) positions from first round
-  const homeManPosition = firstRound.home.m;    // e.g., "M3"
-  const homeWomanPosition = firstRound.home.w;  // e.g., "W3"
+  const homeManPosition = firstRound.home.m;    // e.g., "M1"
+  const homeWomanPosition = firstRound.home.w;  // e.g., "W1"
   // Team B (away) positions from first round
-  const awayManPosition = firstRound.away.m;    // e.g., "M1"
-  const awayWomanPosition = firstRound.away.w;  // e.g., "W4"
+  const awayManPosition = firstRound.away.m;    // e.g., "M2"
+  const awayWomanPosition = firstRound.away.w;  // e.g., "W2"
 
   // Get remaining men and women not in the first match
   const remainingMen = men
@@ -461,37 +514,44 @@ export function generateMixAmericanoRoundsWithFirstMatch(
   const shuffledRemainingWomen = shuffleArray(remainingWomen);
 
   // Find which M positions are NOT used in the first round (for remaining men)
-  const allMenPositions = ["M1", "M2", "M3", "M4"];
+  const allMenPositions = playerCount === 6 ? ["M1", "M2", "M3"] : ["M1", "M2", "M3", "M4"];
   const usedMenPositions = [homeManPosition, awayManPosition];
   const unusedMenPositions = allMenPositions.filter(
     (pos) => !usedMenPositions.includes(pos)
   );
 
   // Find which W positions are NOT used in the first round (for remaining women)
-  const allWomenPositions = ["W1", "W2", "W3", "W4"];
+  const allWomenPositions = playerCount === 6 ? ["W1", "W2", "W3"] : ["W1", "W2", "W3", "W4"];
   const usedWomenPositions = [homeWomanPosition, awayWomanPosition];
   const unusedWomenPositions = allWomenPositions.filter(
     (pos) => !usedWomenPositions.includes(pos)
   );
 
-  // Create mapping from M1-M4 and W1-W4 to actual player names
+  // Create mapping from M1-Mn and W1-Wn to actual player names
   const playerMap: Record<string, string> = {
     // Map selected players to their positions based on first round
     [homeManPosition]: teamAMan,      // Team A man (home position in round 1)
     [homeWomanPosition]: teamAWoman,  // Team A woman (home position in round 1)
     [awayManPosition]: teamBMan,      // Team B man (away position in round 1)
     [awayWomanPosition]: teamBWoman,  // Team B woman (away position in round 1)
-    // Map remaining players to unused positions
-    [unusedMenPositions[0]]: shuffledRemainingMen[0],
-    [unusedMenPositions[1]]: shuffledRemainingMen[1],
-    [unusedWomenPositions[0]]: shuffledRemainingWomen[0],
-    [unusedWomenPositions[1]]: shuffledRemainingWomen[1],
   };
+
+  // Map remaining players to unused positions
+  shuffledRemainingMen.forEach((name, index) => {
+    if (unusedMenPositions[index]) {
+      playerMap[unusedMenPositions[index]] = name;
+    }
+  });
+  shuffledRemainingWomen.forEach((name, index) => {
+    if (unusedWomenPositions[index]) {
+      playerMap[unusedWomenPositions[index]] = name;
+    }
+  });
 
   // Generate rounds from schedule
   const rounds: MixRound[] = [];
 
-  for (const entry of SCHEDULE_DATA) {
+  for (const entry of scheduleData) {
     const match: MixMatch = {
       id: generateId(),
       teamA: [playerMap[entry.home.m], playerMap[entry.home.w]],
@@ -546,6 +606,84 @@ export function regenerateMixAmericanoTournamentWithFirstMatch(
   tournament.rounds = newRounds;
   tournament.hasExtended = false;
   tournament.isEnded = false;
+
+  updateMixTournament(tournament);
+  return tournament;
+}
+
+// ============================================================================
+// EXTEND TOURNAMENT (ADD MORE ROUNDS)
+// ============================================================================
+
+/**
+ * Extend Mix Americano tournament with additional rounds (6 players only)
+ * Can only be done once after all initial 9 rounds are completed
+ */
+export function extendMixAmericanoTournament(tournamentId: string): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Can only extend once
+  if (tournament.hasExtended) return null;
+
+  // Tournament must not be ended
+  if (tournament.isEnded) return null;
+
+  // Only support 6 players extension (8 players has 24 rounds - full cycle)
+  const playerCount = tournament.players.length;
+  if (playerCount !== 6) return null;
+
+  const additionalRoundsCount = calculateMixAmericanoExtendedRounds(playerCount);
+  if (additionalRoundsCount === 0) return null;
+
+  // Reconstruct the player mapping from existing rounds
+  // Round 1: M1-W1 vs M2-W2, Round 2: M1-W1 vs M3-W3
+  const round1 = tournament.rounds[0];
+  const round2 = tournament.rounds[1];
+
+  if (!round1 || !round2) return null;
+
+  const match1 = round1.matches[0];
+  const match2 = round2.matches[0];
+
+  // Build player map from existing rounds
+  // From round 1: teamA = [M1, W1], teamB = [M2, W2]
+  // From round 2: teamA = [M1, W1], teamB = [M3, W3]
+  const playerMap: Record<string, string> = {
+    M1: match1.teamA[0],
+    W1: match1.teamA[1],
+    M2: match1.teamB[0],
+    W2: match1.teamB[1],
+    M3: match2.teamB[0],
+    W3: match2.teamB[1],
+  };
+
+  // Generate additional rounds using the same schedule
+  const newRounds: MixRound[] = [];
+  const lastRoundNumber = tournament.rounds.length;
+
+  for (let i = 0; i < SCHEDULE_DATA_6_PLAYERS.length; i++) {
+    const entry = SCHEDULE_DATA_6_PLAYERS[i];
+    const match: MixMatch = {
+      id: generateId(),
+      teamA: [playerMap[entry.home.m], playerMap[entry.home.w]],
+      teamB: [playerMap[entry.away.m], playerMap[entry.away.w]],
+      scoreA: null,
+      scoreB: null,
+      isCompleted: false,
+    };
+
+    newRounds.push({
+      roundNumber: lastRoundNumber + i + 1,
+      matches: [match],
+      restingPlayers: [],
+    });
+  }
+
+  // Update tournament
+  tournament.rounds = [...tournament.rounds, ...newRounds];
+  tournament.hasExtended = true;
 
   updateMixTournament(tournament);
   return tournament;

@@ -46,7 +46,7 @@ import thunderIcon from "../../public/thunder.svg";
 import chartIcon from "../../public/charts.svg";
 import upIcon from "../../public/Up.svg";
 import { saveTournament, TeamType, Gender } from "@/utils/tournament";
-import { saveMixAmericanoTournament, MIX_AMERICANO_REQUIRED_PLAYERS, MIX_AMERICANO_REQUIRED_MEN, MIX_AMERICANO_REQUIRED_WOMEN } from "@/utils/MixAmericanoTournament";
+import { saveMixAmericanoTournament, MIX_AMERICANO_ALLOWED_PLAYERS, MIX_AMERICANO_6_MEN, MIX_AMERICANO_6_WOMEN, MIX_AMERICANO_8_MEN, MIX_AMERICANO_8_WOMEN } from "@/utils/MixAmericanoTournament";
 
 // Team type options with descriptions matching Figma design
 const teamTypes = [
@@ -134,11 +134,25 @@ export default function CreateTournament() {
       };
     }
 
-    // Check for exactly 4 men and 4 women
-    if (menCount !== MIX_AMERICANO_REQUIRED_MEN || womenCount !== MIX_AMERICANO_REQUIRED_WOMEN) {
+    const playerCount = mixPlayers.length;
+
+    // Check if player count is valid (6 or 8)
+    if (!MIX_AMERICANO_ALLOWED_PLAYERS.includes(playerCount)) {
       return {
         valid: false,
-        error: `Requires ${MIX_AMERICANO_REQUIRED_MEN} men and ${MIX_AMERICANO_REQUIRED_WOMEN} women.`,
+        error: `Mix Americano requires exactly 6 or 8 players (currently ${playerCount})`,
+      };
+    }
+
+    // Determine required counts based on player count
+    const requiredMen = playerCount === 6 ? MIX_AMERICANO_6_MEN : MIX_AMERICANO_8_MEN;
+    const requiredWomen = playerCount === 6 ? MIX_AMERICANO_6_WOMEN : MIX_AMERICANO_8_WOMEN;
+
+    // Check for correct men/women ratio
+    if (menCount !== requiredMen || womenCount !== requiredWomen) {
+      return {
+        valid: false,
+        error: `${playerCount} players requires ${requiredMen} men and ${requiredWomen} women.`,
       };
     }
 
@@ -217,10 +231,11 @@ export default function CreateTournament() {
       }
 
       if (isMixAmericano) {
-        // Mix Americano: Check max limit of 8
+        // Mix Americano: Check max limit (max is 8 players)
+        const maxAllowed = Math.max(...MIX_AMERICANO_ALLOWED_PLAYERS);
         const totalPlayers = mixPlayers.length + newPlayerNames.length;
-        if (totalPlayers > MIX_AMERICANO_REQUIRED_PLAYERS) {
-          setPlayerInputError(`Mix Americano only available for ${MIX_AMERICANO_REQUIRED_PLAYERS} players.`);
+        if (totalPlayers > maxAllowed) {
+          setPlayerInputError(`Mix Americano allows only 6 or 8 players (currently ${mixPlayers.length}).`);
           return;
         }
 
@@ -257,8 +272,8 @@ export default function CreateTournament() {
         const totalPlayers = players.length + newPlayerNames.length;
 
         // Check if adding these players would exceed max limit
-        if (totalPlayers > 10) {
-          setPlayerInputError(`Maximum 10 players allowed. You already have (${players.length} players).`);
+        if (totalPlayers > 8) {
+          setPlayerInputError(`Maximum 8 players allowed. You already have (${players.length} players).`);
           return;
         }
 

@@ -31,7 +31,11 @@ import {
 } from "@/utils/tournament";
 import { toast } from "sonner";
 import { GenderMale, GenderFemale } from "@phosphor-icons/react";
-import { MIX_AMERICANO_TOTAL_ROUNDS } from "@/utils/MixAmericanoTournament";
+import {
+  calculateMixAmericanoRounds,
+  calculateMixAmericanoExtendedRounds,
+  extendMixAmericanoTournament,
+} from "@/utils/MixAmericanoTournament";
 
 // Skeleton for ScoreCard loading (includes resting players)
 function ScoreCardSkeleton() {
@@ -290,9 +294,9 @@ export default function TournamentDetailPage() {
   const isMixAmericano = tournament.teamType === "mix";
 
   // Calculate initial rounds count (set 1)
-  // For Mix Americano, use the fixed 24 rounds
+  // For Mix Americano, use the appropriate rounds based on player count (6 or 8)
   const initialRoundsCount = isMixAmericano
-    ? MIX_AMERICANO_TOTAL_ROUNDS
+    ? calculateMixAmericanoRounds(tournament.players.length)
     : calculateRounds(tournament.players.length);
 
   // Check if ALL initial rounds (set 1) are completed
@@ -331,9 +335,39 @@ export default function TournamentDetailPage() {
       return "completeTournament";
     }
 
-    // Mix Americano: No extend feature, only end game after all 24 rounds
+    // Mix Americano handling
     if (isMixAmericano) {
-      // All rounds completed - show end game banner
+      const playerCount = tournament.players.length;
+      const canExtend = playerCount === 6 && calculateMixAmericanoExtendedRounds(playerCount) > 0;
+
+      // Already extended (Set 2 exists)
+      if (tournament.hasExtended) {
+        // All rounds completed - show end game banner
+        if (allRoundsCompleted) {
+          return "endGame";
+        }
+        // Last round is inputted but there are skipped rounds - show warning banner
+        if (isLastRoundInputted && !allRoundsCompleted) {
+          return "warning";
+        }
+        return null;
+      }
+
+      // Set 1 only (not extended yet)
+      // For 6 players: can extend after all 9 rounds completed
+      if (canExtend) {
+        // Set 1 is complete - show add round banner
+        if (allSet1RoundsCompleted) {
+          return "addRound";
+        }
+        // Last round of set 1 is inputted but there are skipped rounds - show warning banner
+        if (isLastSet1RoundInputted && !allSet1RoundsCompleted) {
+          return "warning";
+        }
+        return null;
+      }
+
+      // For 8 players (24 rounds - no extension): only end game after all rounds
       if (allRoundsCompleted) {
         return "endGame";
       }
@@ -376,7 +410,10 @@ export default function TournamentDetailPage() {
 
   // Handle extending tournament with more rounds
   const handleAddMoreRounds = () => {
-    const updatedTournament = extendTournament(tournament.id);
+    // Use appropriate extend function based on tournament type
+    const updatedTournament = isMixAmericano
+      ? extendMixAmericanoTournament(tournament.id)
+      : extendTournament(tournament.id);
     if (updatedTournament) {
       setTournament(updatedTournament);
       // Navigate to the first new round
