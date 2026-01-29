@@ -637,27 +637,26 @@ export function extendMixAmericanoTournament(tournamentId: string): MixTournamen
   const additionalRoundsCount = calculateMixAmericanoExtendedRounds(playerCount);
   if (additionalRoundsCount === 0) return null;
 
-  // Reconstruct the player mapping from existing rounds
-  // Round 1: M1-W1 vs M2-W2, Round 2: M1-W1 vs M3-W3
-  const round1 = tournament.rounds[0];
-  const round2 = tournament.rounds[1];
+  // Separate players by gender and reshuffle for new round lineup
+  const men = tournament.players.filter(
+    (p) => tournament.playerGenders[p] === "male"
+  );
+  const women = tournament.players.filter(
+    (p) => tournament.playerGenders[p] === "female"
+  );
 
-  if (!round1 || !round2) return null;
+  // Shuffle men and women separately for a different lineup in round 10
+  const shuffledMen = shuffleArray(men);
+  const shuffledWomen = shuffleArray(women);
 
-  const match1 = round1.matches[0];
-  const match2 = round2.matches[0];
-
-  // Build player map from existing rounds
-  // From round 1: teamA = [M1, W1], teamB = [M2, W2]
-  // From round 2: teamA = [M1, W1], teamB = [M3, W3]
-  const playerMap: Record<string, string> = {
-    M1: match1.teamA[0],
-    W1: match1.teamA[1],
-    M2: match1.teamB[0],
-    W2: match1.teamB[1],
-    M3: match2.teamB[0],
-    W3: match2.teamB[1],
-  };
+  // Create new mapping from M1-M3 and W1-W3 to shuffled players
+  const playerMap: Record<string, string> = {};
+  shuffledMen.forEach((name, index) => {
+    playerMap[`M${index + 1}`] = name;
+  });
+  shuffledWomen.forEach((name, index) => {
+    playerMap[`W${index + 1}`] = name;
+  });
 
   // Generate additional rounds using the same schedule
   const newRounds: MixRound[] = [];
