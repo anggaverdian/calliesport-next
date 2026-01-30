@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/drawer";
 import { XIcon, UserIcon, CaretRightIcon, ArrowLeftIcon } from "@phosphor-icons/react";
 import { Tournament, Match, Round } from "@/utils/tournament";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerStats {
   name: string;
@@ -40,14 +42,59 @@ interface LeaderboardTableProps {
   tournament: Tournament;
 }
 
+type SortType = "points" | "wins";
+
 export default function LeaderboardTable({ tournament }: LeaderboardTableProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // State for detail view - when user clicks on a player row to see rounds
   const [selectedPairPlayer, setSelectedPairPlayer] = useState<string | null>(null);
+  // State for sort type
+  const [sortBy, setSortBy] = useState<SortType>("points");
+  // State for loading skeleton
+  const [isLoading, setIsLoading] = useState(false);
+  // Ref to track if this is the initial mount
+  const isInitialMount = useRef(true);
 
   // Calculate player statistics
   const playerStats = calculatePlayerStats(tournament);
+
+  // Sort player stats based on selected sort type
+  const sortedPlayerStats = [...playerStats].sort((a, b) => {
+    if (sortBy === "wins") {
+      // Sort by wins first, then by final score as tiebreaker
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.finalScore - a.finalScore;
+    }
+    // Default: sort by points (finalScore)
+    if (b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    return b.totalPoints - a.totalPoints;
+  });
+
+  // Handle sort change with loading state
+  const handleSortChange = (value: string) => {
+    const newSortType = value === "SortByWins" ? "wins" : "points";
+    if (newSortType !== sortBy) {
+      setIsLoading(true);
+      setSortBy(newSortType);
+    }
+  };
+
+  // Effect to handle loading timeout when sort changes
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   // Calculate pairing stats for selected player
   const pairingStats = selectedPlayer
@@ -75,6 +122,21 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
 
   return (
     <div className="space-y-4">
+      {/* Leaderboard Sort By */}
+      <div className="flex items-center w-full justify-between">
+          <div className="w-auto"><span className="text-sm font-semibold">Sort by:</span></div>
+          <div>
+            <Tabs
+              value={sortBy === "points" ? "SortByPoints" : "SortByWins"}
+              onValueChange={handleSortChange}
+            >
+              <TabsList className="bg-clx-bg-neutral-bold">
+                <TabsTrigger value="SortByPoints">Points</TabsTrigger>
+                <TabsTrigger value="SortByWins">Wins</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+      </div>
       {/* Leaderboard Table */}
       <Table>
         <TableHeader className="border-0">
@@ -88,62 +150,90 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {playerStats.map((player, index) => {
-            const rank = index + 1;
-            const isFirstPlace = rank === 1;
+          {isLoading
+            ? // Skeleton loading state
+              Array.from({ length: tournament.players.length }).map((_, index) => (
+                <TableRow
+                  key={`skeleton-${index}`}
+                  className="border-b-1 border-clx-border-subtle bg-clx-bg-neutral-subtle"
+                >
+                  <TableCell className="py-3 text-center">
+                    <Skeleton className="h-4 w-4 mx-auto" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-6" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-12" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-8" />
+                  </TableCell>
+                  <TableCell className="py-3 text-center">
+                    <Skeleton className="h-4 w-8 mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ))
+            : // Actual data
+              sortedPlayerStats.map((player, index) => {
+                const rank = index + 1;
+                const isFirstPlace = rank === 1;
 
-            return (
-              <TableRow
-                key={player.name}
-                className={`border-b-1 border-clx-border-subtle ${
-                  isFirstPlace
-                    ? "bg-amber-300 hover:bg-amber-300"
-                    : "bg-clx-bg-neutral-subtle hover:bg-clx-bg-neutral-hover"
-                }`}
-              >
-                <TableCell
-                  className={`py-3 text-center text-xs font-normal ${
-                    isFirstPlace ? "text-clx-text-default" : "text-clx-text-placeholder"
-                  }`}
-                >
-                  {rank}
-                </TableCell>
-                <TableCell
-                  className={`py-3 text-sm font-medium ${
-                    isFirstPlace ? "text-clx-text-default" : "text-clx-text-default"
-                  } cursor-pointer hover:underline`}
-                  onClick={() => handlePlayerClick(player.name)}
-                >
-                  {player.name}
-                </TableCell>
-                <TableCell className="py-3 text-xs text-clx-text-default">
-                  {player.matchesPlayed}
-                </TableCell>
-                <TableCell className="py-3 text-xs text-clx-text-default">
-                  {player.wins}-{player.losses}-{player.ties}
-                </TableCell>
-                <TableCell className="py-3 text-xs text-clx-text-success">
-                  {(() => {
-                    // Check if player has compensation points
-                    if (player.compensationPoints > 0) {
-                      // Show +points (e.g., +10, +20)
-                      return `+${player.compensationPoints}`;
-                    } else {
-                      // Show nothing if no compensation
-                      return "";
-                    }
-                  })()}
-                </TableCell>
-                <TableCell
-                  className={`py-3 text-center text-sm font-semibold ${
-                    isFirstPlace ? "text-clx-text-default" : "text-clx-text-default"
-                  }`}
-                >
-                  {player.finalScore}
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                return (
+                  <TableRow
+                    key={player.name}
+                    className={`border-b-1 border-clx-border-subtle ${
+                      isFirstPlace
+                        ? "bg-amber-300 hover:bg-amber-300"
+                        : "bg-clx-bg-neutral-subtle hover:bg-clx-bg-neutral-hover"
+                    }`}
+                  >
+                    <TableCell
+                      className={`py-3 text-center text-xs font-normal ${
+                        isFirstPlace ? "text-clx-text-default" : "text-clx-text-placeholder"
+                      }`}
+                    >
+                      {rank}
+                    </TableCell>
+                    <TableCell
+                      className={`py-3 text-sm font-medium ${
+                        isFirstPlace ? "text-clx-text-default" : "text-clx-text-default"
+                      } cursor-pointer hover:underline`}
+                      onClick={() => handlePlayerClick(player.name)}
+                    >
+                      {player.name}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-clx-text-default">
+                      {player.matchesPlayed}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-clx-text-default">
+                      {player.wins}-{player.losses}-{player.ties}
+                    </TableCell>
+                    <TableCell className="py-3 text-xs text-clx-text-success">
+                      {(() => {
+                        // Check if player has compensation points
+                        if (player.compensationPoints > 0) {
+                          // Show +points (e.g., +10, +20)
+                          return `+${player.compensationPoints}`;
+                        } else {
+                          // Show nothing if no compensation
+                          return "";
+                        }
+                      })()}
+                    </TableCell>
+                    <TableCell
+                      className={`py-3 text-center text-xs ${
+                        isFirstPlace ? "text-clx-text-default" : "text-clx-text-default"
+                      }`}
+                    >
+                      {player.finalScore}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
         </TableBody>
       </Table>
 
