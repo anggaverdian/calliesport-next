@@ -58,6 +58,8 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
   const [sortBy, setSortBy] = useState<SortType>("points");
   // State for loading skeleton
   const [isLoading, setIsLoading] = useState(false);
+  // State for drawer tab
+  const [drawerTab, setDrawerTab] = useState<"overview" | "matches">("overview");
   // Ref to track if this is the initial mount
   const isInitialMount = useRef(true);
 
@@ -111,9 +113,25 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
     ? getRoundsWithPair(tournament, selectedPlayer, selectedPairPlayer)
     : { partnerRounds: [], versusRounds: [] };
 
+  // Get all rounds for the selected player (for Player's Matches tab)
+  const playerRounds = selectedPlayer
+    ? getPlayerRounds(tournament, selectedPlayer)
+    : [];
+
+  // Get selected player's stats for the stats bar
+  const selectedPlayerStats = selectedPlayer
+    ? playerStats.find(p => p.name === selectedPlayer)
+    : null;
+
+  // Get selected player's rank
+  const selectedPlayerRank = selectedPlayer
+    ? sortedPlayerStats.findIndex(p => p.name === selectedPlayer) + 1
+    : 0;
+
   const handlePlayerClick = (playerName: string) => {
     setSelectedPlayer(playerName);
     setSelectedPairPlayer(null); // Reset detail view
+    setDrawerTab("overview"); // Reset to overview tab
     setIsDrawerOpen(true);
   };
 
@@ -136,8 +154,8 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
               onValueChange={handleSortChange}
             >
               <TabsList className="bg-clx-bg-neutral-bold">
-                <TabsTrigger value="SortByPoints">Points</TabsTrigger>
-                <TabsTrigger value="SortByWins">Wins</TabsTrigger>
+                <TabsTrigger value="SortByPoints" className={sortBy !== "points" ? "text-clx-text-secondary" : ""}>Points</TabsTrigger>
+                <TabsTrigger value="SortByWins" className={sortBy !== "wins" ? "text-clx-text-secondary" : ""}>Wins</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -302,11 +320,12 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
               </div>
 
 
+
               {/* Partner up section */}
               {pairRounds.partnerRounds.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-base font-semibold text-clx-text-default">
-                    Partner up on
+                    Partner up <span className="text-sm">🤝</span>
                   </h3>
                   <div className="space-y-2">
                     {pairRounds.partnerRounds.map((roundInfo) => (
@@ -323,7 +342,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
               {pairRounds.versusRounds.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="text-base font-semibold text-clx-text-default">
-                    Versus on
+                    Versus <span className="text-xs">⚔</span> 
                   </h3>
                   <div className="space-y-2">
                     {pairRounds.versusRounds.map((roundInfo) => (
@@ -339,7 +358,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           ) : (
             // Summary View - Shows pairing stats table
             <div className="flex-1 overflow-auto p-4 space-y-4 pb-40">
-              <h2>Head to head overview</h2>
+              <h3>Head to head overview</h3>
               {/* Player Name Header */}
               <div className="flex items-center gap-3 border-1 rounded-xl p-3">
                 <div className="w-8 h-8 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
@@ -350,77 +369,135 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                 </span>
               </div>
 
-              {/* Recap Section */}
-              <div className="space-y-2">
-                {/* Pairing Stats Table */}
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-clx-border-subtle hover:bg-transparent">
-                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-4">
-                        Player
-                      </TableHead>
-                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
-                       Partner <span className="text-sm">🤝</span>
-                      </TableHead>
-                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
-                        Versus <span className="text-xs">⚔</span> 
-                      </TableHead>
-                      <TableHead className="w-10" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pairingStats.map((stat) => (
-                      <TableRow
-                        key={stat.playerName}
-                        className="border-b border-clx-border-subtle bg-white hover:bg-clx-bg-neutral-hover cursor-pointer"
-                        onClick={() => handlePairPlayerClick(stat.playerName)}
+              <div className="w-auto">
+                <Tabs
+                  value={drawerTab === "overview" ? "PlayerOverview" : "PlayerMatches"}
+                  onValueChange={(value) => setDrawerTab(value === "PlayerOverview" ? "overview" : "matches")}
+                >
+                    <TabsList className="bg-clx-bg-neutral-bold">
+                      <TabsTrigger
+                        value="PlayerOverview"
+                        className={drawerTab !== "overview" ? "text-clx-text-secondary" : ""}
                       >
-                        <TableCell className="py-4 px-4 text-sm font-medium text-clx-text-default">
-                          {stat.playerName}
-                        </TableCell>
-                        <TableCell className="py-4 px-2 w-[100px]">
-                          <StatusSlots results={stat.partnerResults} />
-                        </TableCell>
-                        <TableCell className="py-4 px-2 w-[100px]">
-                          <StatusSlots results={stat.versusResults} />
-                        </TableCell>
-                        <TableCell className="py-4 px-2 w-10 text-right">
-                          <CaretRightIcon size={16} className="text-clx-icon-default" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        Overview
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="PlayerMatches"
+                        className={drawerTab !== "matches" ? "text-clx-text-secondary" : ""}
+                      >
+                        Matches
+                      </TabsTrigger>
+                    </TabsList>
+                </Tabs>
               </div>
-              <div className="bg-clx-bg-neutral-subtle p-4 text-xs text-clx-text-secondary">
-                  <div className="mb-3 text-clx-text-default font-semibold\"><span>Legend:</span></div>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                          <CheckCircleIcon weight="fill" size={16} className="text-clx-icon-success" /> <span>You won at that round.</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                          <XCircleIcon weight="fill" size={16} className="text-clx-icon-danger" /> <span>You lost at that round.</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                          <CircleIcon weight="fill" size={16} className="text-clx-icon-disabled" /> <span>{selectedPlayer}’s scheduled round</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="text-clx-text-default">Progress Tracker (x of y)</div>
-                      <div className="">
-                        <div className="flex items-center gap-2">
-                          <div className="">X:</div>
-                          <div className="">The number of rounds already completed.</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="">Y:</div>
-                          <div className="">Total number of rounds scheduled for this matchup.</div>
-                        </div>
-                      </div>
-                    </div>
+
+              {/* Tab Content */}
+              {drawerTab === "overview" ? (
+                <>
+                  {/* Overview Tab - Pairing Stats Table */}
+                  <div className="space-y-2">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-clx-border-subtle hover:bg-transparent">
+                          <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-4">
+                            Player
+                          </TableHead>
+                          <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
+                           Partner <span className="text-sm">🤝</span>
+                          </TableHead>
+                          <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
+                            Versus <span className="text-xs">⚔</span>
+                          </TableHead>
+                          <TableHead className="w-10" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pairingStats.map((stat) => (
+                          <TableRow
+                            key={stat.playerName}
+                            className="border-b border-clx-border-subtle bg-white hover:bg-clx-bg-neutral-hover cursor-pointer"
+                            onClick={() => handlePairPlayerClick(stat.playerName)}
+                          >
+                            <TableCell className="py-4 px-4 text-sm font-medium text-clx-text-default">
+                              {stat.playerName}
+                            </TableCell>
+                            <TableCell className="py-4 px-2 w-[100px]">
+                              <StatusSlots results={stat.partnerResults} />
+                            </TableCell>
+                            <TableCell className="py-4 px-2 w-[100px]">
+                              <StatusSlots results={stat.versusResults} />
+                            </TableCell>
+                            <TableCell className="py-4 px-2 w-10 text-right">
+                              <CaretRightIcon size={16} className="text-clx-icon-default" />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-              </div>
+                  <div className="bg-clx-bg-neutral-subtle p-4 text-xs text-clx-text-secondary rounded-lg">
+                      <div className="mb-3 text-clx-text-default font-semibold"><span>Legend:</span></div>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                              <CheckCircleIcon weight="fill" size={16} className="text-clx-icon-success" /> <span>You won at that round.</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                              <XCircleIcon weight="fill" size={16} className="text-clx-icon-danger" /> <span>You lost at that round.</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                              <CircleIcon weight="fill" size={16} className="text-clx-icon-disabled" /> <span>{selectedPlayer}&apos;s scheduled round</span>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Player's Matches Tab - Stats Bar and Round Cards */}
+                  {/* Stats Bar */}
+                  {selectedPlayerStats && (
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-clx-bg-neutral-subtle border border-clx-border-default rounded-lg px-3 py-1 text-center">
+                        <p className="text-sm text-clx-text-secondary">Rank</p>
+                        <p className="text-sm font-semibold text-clx-text-default">
+                          {selectedPlayerRank === 1 ? "1st" : selectedPlayerRank === 2 ? "2nd" : selectedPlayerRank === 3 ? "3rd" : `${selectedPlayerRank}th`}
+                        </p>
+                      </div>
+                      <div className="flex-1 bg-clx-bg-neutral-subtle border border-clx-border-default rounded-lg px-3 py-1 text-center">
+                        <p className="text-sm text-clx-text-secondary">Mp</p>
+                        <p className="text-sm font-semibold text-clx-text-default">{selectedPlayerStats.matchesPlayed}</p>
+                      </div>
+                      <div className="flex-1 bg-clx-bg-neutral-subtle border border-clx-border-default rounded-lg px-3 py-1 text-center">
+                        <p className="text-sm text-clx-text-secondary">W-L-T</p>
+                        <p className="text-sm font-semibold text-clx-text-default">
+                          {selectedPlayerStats.wins}-{selectedPlayerStats.losses}-{selectedPlayerStats.ties}
+                        </p>
+                      </div>
+                      <div className="flex-1 bg-clx-bg-neutral-subtle border border-clx-border-default rounded-lg px-3 py-1 text-center">
+                        <p className="text-sm text-clx-text-secondary">Pts</p>
+                        <p className="text-sm font-semibold text-clx-text-default">{selectedPlayerStats.finalScore}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Round Cards */}
+                  <div className="space-y-2">
+                    {playerRounds.length > 0 ? (
+                      playerRounds.map((roundInfo) => (
+                        <RoundCard
+                          key={`player-round-${roundInfo.round.roundNumber}`}
+                          roundInfo={roundInfo}
+                        />
+                      ))
+                    ) : (
+                      <p className="text-sm text-clx-text-secondary text-center py-4">
+                        No matches found for {selectedPlayer}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DrawerContent>
@@ -650,6 +727,25 @@ function getRoundsWithPair(
   });
 
   return { partnerRounds, versusRounds };
+}
+
+// Get all rounds where a player participated
+function getPlayerRounds(
+  tournament: Tournament,
+  playerName: string
+): RoundInfo[] {
+  const playerRounds: RoundInfo[] = [];
+
+  tournament.rounds.forEach((round) => {
+    round.matches.forEach((match) => {
+      if (match.teamA.includes(playerName) || match.teamB.includes(playerName)) {
+        playerRounds.push({ round, match });
+      }
+    });
+  });
+
+  // Sort by round number
+  return playerRounds.sort((a, b) => a.round.roundNumber - b.round.roundNumber);
 }
 
 // RoundCard component props
