@@ -16,7 +16,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { XIcon, UserIcon, CaretRightIcon, ArrowLeftIcon } from "@phosphor-icons/react";
+import { XIcon, UserIcon, CaretRightIcon, ArrowLeftIcon, CheckCircleIcon, XCircleIcon, CircleIcon } from "@phosphor-icons/react";
 import { Tournament, Match, Round } from "@/utils/tournament";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,10 +32,15 @@ interface PlayerStats {
   finalScore: number;
 }
 
+// Round result type: 'win' | 'loss' | 'pending'
+type RoundResult = 'win' | 'loss' | 'pending';
+
 interface PlayerPairingStats {
   playerName: string;
   partnerCount: number;
   versusCount: number;
+  partnerResults: RoundResult[]; // Results for each partner round
+  versusResults: RoundResult[];  // Results for each versus round
 }
 
 interface LeaderboardTableProps {
@@ -266,7 +271,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
             // Detail View - Shows rounds with specific pair
             <div className="flex-1 overflow-auto p-4 space-y-8 user-drag-none pb-40">
               {/* Header with back button and player names */}
-              <div className="flex items-center gap-12">
+              <div className="flex items-center gap-15">
                 <button
                   onClick={handleBackToSummary}
                   className="text-clx-text-secondary hover:text-clx-text-default"
@@ -333,8 +338,8 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
             </div>
           ) : (
             // Summary View - Shows pairing stats table
-            <div className="flex-1 overflow-auto p-4 space-y-4">
-              <h2>Game summary</h2>
+            <div className="flex-1 overflow-auto p-4 space-y-4 pb-40">
+              <h2>Head to head overview</h2>
               {/* Player Name Header */}
               <div className="flex items-center gap-3 border-1 rounded-xl p-3">
                 <div className="w-8 h-8 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
@@ -354,13 +359,13 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                       <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-4">
                         Player
                       </TableHead>
-                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[80px]">
-                        Partner
+                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
+                       Partner <span className="text-sm">🤝</span>
                       </TableHead>
-                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[80px]">
-                        Versus
+                      <TableHead className="text-sm font-normal text-clx-text-secondary py-4 px-2 w-[100px]">
+                        Versus <span className="text-xs">⚔</span> 
                       </TableHead>
-                      <TableHead className="w-8" />
+                      <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -373,19 +378,48 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                         <TableCell className="py-4 px-4 text-sm font-medium text-clx-text-default">
                           {stat.playerName}
                         </TableCell>
-                        <TableCell className="py-4 px-2 text-sm text-clx-text-default">
-                          {stat.partnerCount > 0 ? `${stat.partnerCount}x` : "-"}
+                        <TableCell className="py-4 px-2 w-[100px]">
+                          <StatusSlots results={stat.partnerResults} />
                         </TableCell>
-                        <TableCell className="py-4 px-2 text-sm text-clx-text-default">
-                          {stat.versusCount > 0 ? `${stat.versusCount}x` : "-"}
+                        <TableCell className="py-4 px-2 w-[100px]">
+                          <StatusSlots results={stat.versusResults} />
                         </TableCell>
-                        <TableCell className="py-4 px-0">
-                          <CaretRightIcon size={20} className="text-clx-text-secondary" />
+                        <TableCell className="py-4 px-2 w-10 text-right">
+                          <CaretRightIcon size={16} className="text-clx-icon-default" />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              <div className="bg-clx-bg-neutral-subtle p-4 text-xs text-clx-text-secondary">
+                  <div className="mb-3 text-clx-text-default font-semibold\"><span>Legend:</span></div>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                          <CheckCircleIcon weight="fill" size={16} className="text-clx-icon-success" /> <span>You won at that round.</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <XCircleIcon weight="fill" size={16} className="text-clx-icon-danger" /> <span>You lost at that round.</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <CircleIcon weight="fill" size={16} className="text-clx-icon-disabled" /> <span>{selectedPlayer}’s scheduled round</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-clx-text-default">Progress Tracker (x of y)</div>
+                      <div className="">
+                        <div className="flex items-center gap-2">
+                          <div className="">X:</div>
+                          <div className="">The number of rounds already completed.</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="">Y:</div>
+                          <div className="">Total number of rounds scheduled for this matchup.</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
               </div>
             </div>
           )}
@@ -503,6 +537,8 @@ function calculatePairingStats(
         playerName: player,
         partnerCount: 0,
         versusCount: 0,
+        partnerResults: [],
+        versusResults: [],
       };
     }
   });
@@ -513,33 +549,50 @@ function calculatePairingStats(
       const teamAPlayers = match.teamA;
       const teamBPlayers = match.teamB;
 
+      // Determine round result for selectedPlayer's team
+      const getResult = (isTeamA: boolean): RoundResult => {
+        if (!match.isCompleted || match.scoreA === null || match.scoreB === null) {
+          return 'pending';
+        }
+        const playerScore = isTeamA ? match.scoreA : match.scoreB;
+        const opponentScore = isTeamA ? match.scoreB : match.scoreA;
+        if (playerScore > opponentScore) return 'win';
+        return 'loss';
+      };
+
       // Check if selected player is in Team A
       if (teamAPlayers.includes(selectedPlayer)) {
+        const result = getResult(true);
         // Partner is the other player in Team A
         teamAPlayers.forEach((player) => {
           if (player !== selectedPlayer && stats[player]) {
             stats[player].partnerCount++;
+            stats[player].partnerResults.push(result);
           }
         });
         // Opponents are players in Team B
         teamBPlayers.forEach((player) => {
           if (stats[player]) {
             stats[player].versusCount++;
+            stats[player].versusResults.push(result);
           }
         });
       }
       // Check if selected player is in Team B
       else if (teamBPlayers.includes(selectedPlayer)) {
+        const result = getResult(false);
         // Partner is the other player in Team B
         teamBPlayers.forEach((player) => {
           if (player !== selectedPlayer && stats[player]) {
             stats[player].partnerCount++;
+            stats[player].partnerResults.push(result);
           }
         });
         // Opponents are players in Team A
         teamAPlayers.forEach((player) => {
           if (stats[player]) {
             stats[player].versusCount++;
+            stats[player].versusResults.push(result);
           }
         });
       }
@@ -638,7 +691,7 @@ function RoundCard({ roundInfo }: RoundCardProps) {
   const formatScore = (score: number) => score.toString().padStart(2, '0');
 
   return (
-    <div className="bg-clx-bg-neutral-bold rounded-lg px-6 py-3 space-y-3">
+    <div className="bg-white border rounded-lg px-6 py-3 space-y-3">
       {/* Round number */}
       <p className="text-sm font-bold text-clx-text-default text-center">
         Round {round.roundNumber}
@@ -692,6 +745,65 @@ function RoundCard({ roundInfo }: RoundCardProps) {
             </span>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// StatusSlots component props
+interface StatusSlotsProps {
+  results: RoundResult[];
+}
+
+// StatusSlots component to display round result icons with count
+function StatusSlots({ results }: StatusSlotsProps) {
+  const completedCount = results.filter(r => r !== 'pending').length;
+  const totalCount = results.length;
+
+  if (totalCount === 0) {
+    return <span className="text-sm text-clx-text-default">-</span>;
+  }
+
+  return (
+    <div className="items-center">
+      {/* Count label */}
+      <div className="mb-1 hidden">
+        <span className="text-[12px] text-clx-text-default whitespace-nowrap">
+          {completedCount} <span className="text-clx-text-placeholder">of</span> {totalCount}
+        </span>
+      </div>
+      {/* Icons container - max 4 per row, wraps */}
+      <div className="flex flex-wrap gap-0.5 max-w-[80px]">
+        {results.map((result, idx) => {
+          if (result === 'win') {
+            return (
+              <CheckCircleIcon
+                key={idx}
+                size={14}
+                weight="fill"
+                className="text-clx-icon-success"
+              />
+            );
+          } else if (result === 'loss') {
+            return (
+              <XCircleIcon
+                key={idx}
+                size={14}
+                weight="fill"
+                className="text-clx-icon-danger"
+              />
+            );
+          } else {
+            return (
+              <CircleIcon
+                key={idx}
+                size={14}
+                weight="fill"
+                className="text-clx-icon-disabled"
+              />
+            );
+          }
+        })}
       </div>
     </div>
   );

@@ -37,16 +37,15 @@ npm run lint
 
 The core tournament logic lives in [utils/tournament.ts](utils/tournament.ts). Key algorithms:
 
-#### 1. **Pairing Algorithm** (Round Robin Rotation)
+#### 1. **Pairing Algorithm** (Perfect Whist Tournament Matrices)
 - **Goal**: Ensure balanced partnerships and opponents across all rounds
-- **For 6 & 8 Players**: Uses deterministic **Whist Tournament Matrix** (`WHIST_MATRIX_6_PLAYERS`, `WHIST_MATRIX_8_PLAYERS`) for perfect balance
-  - 6 players: Each pair partners 2× and opposes 4×
-  - 8 players: Each pair partners 1× and opposes 2×
-- **For Other Counts (4, 5, 7, 9-12)**: Uses dynamic rotation algorithm with scoring:
-  1. Tracks play counts, partner counts, opponent counts per player/pair
-  2. Prioritizes lowest play count players for next match
-  3. Scores pairings to minimize repeated partnerships/opponents
-  4. Applies **cross-pairing bonus**: previous partners become opponents in next round
+- **All player counts (4-8) use hardcoded perfect Whist Tournament Matrices** for optimal balance:
+  - `WHIST_MATRIX_4_PLAYERS`: 6 rounds - each pair partners 2×, opposes 4×
+  - `WHIST_MATRIX_5_PLAYERS`: 10 rounds - each player plays 8 matches, rests 2×
+  - `WHIST_MATRIX_6_PLAYERS`: 15 rounds - each pair partners 2×, opposes 4×
+  - `WHIST_MATRIX_7_PLAYERS`: 21 rounds - balanced rotation with rest
+  - `WHIST_MATRIX_8_PLAYERS`: 14 rounds - each pair partners 1×, opposes 2×
+- **No dynamic algorithm**: All pairings are predetermined via matrices for perfect mathematical balance
 
 #### 2. **Round Generation**
 - `generateTournamentRounds(players)`: Creates all rounds with shuffled player order
@@ -104,12 +103,17 @@ const onSubmit = (data: FormData) => {
 ## Key Business Rules
 
 ### Tournament Types
-- **Only "Standard Americano" is fully implemented** (`isTeamTypeSupported()` returns `true` only for `"standard"`)
-- Mix Americano, Team Americano, Standard Mexicano show "Coming Soon" placeholder
+- **Standard Americano**: Fully implemented for 4-8 players (`isTeamTypeSupported()` returns `true`)
+- **Mix Americano**: Fully implemented for 6 or 8 players (`isTeamTypeSupported()` returns `true`)
+  - 6 players: 3 men + 3 women, 9 rounds (extendable to 18)
+  - 8 players: 4 men + 4 women, 24 rounds
+  - Each team always has 1 man + 1 woman (mixed pairs)
+  - Implementation in [utils/MixAmericanoTournament.ts](utils/MixAmericanoTournament.ts)
+- Team Americano, Standard Mexicano show "Coming Soon" placeholder
 
 ### Player Limits
-- Minimum: 4 players (`MIN_PLAYERS`)
-- Maximum: 12 players (`MAX_PLAYERS`)
+- **Standard Americano**: 4-8 players (`MIN_PLAYERS=4`, `MAX_PLAYERS=8`)
+- **Mix Americano**: 6 or 8 players only (must have equal men and women)
 
 ### Tournament Lifecycle
 1. **Create**: Generate rounds based on player count (formula in `calculateRounds()`)
@@ -150,21 +154,23 @@ const onSubmit = (data: FormData) => {
 - Duplicate player names prevented in create form
 
 ### Testing Pairing Balance
-- `validateWhistMatrixBalance()` logs partner/opponent counts to console for 6/8 player tournaments
-- Used during development to verify Whist matrix correctness
+- `validateWhistMatrixBalance()` logs partner/opponent counts to console for all player counts (4-8)
+- Used during development to verify Whist matrix correctness for Standard Americano
+- Mix Americano uses separate schedule validation (check man/woman pairing constraints)
 
 ## Common Tasks
 
 ### Adding a New Tournament Feature
 1. Add data fields to `Tournament` interface in [utils/tournament.ts](utils/tournament.ts)
 2. Update `TournamentSchema` in [utils/form-schemas.ts](utils/form-schemas.ts)
-3. Add business logic functions in [utils/tournament.ts](utils/tournament.ts)
+3. Add business logic functions in [utils/tournament.ts](utils/tournament.ts) (Standard) or [utils/MixAmericanoTournament.ts](utils/MixAmericanoTournament.ts) (Mix)
 4. Update UI in [app/tournament/[id]/page.tsx](app/tournament/[id]/page.tsx) or related component
 
 ### Modifying Pairing Algorithm
-- **For 6/8 players**: Edit `WHIST_MATRIX_*_PLAYERS` arrays (testing requires math validation)
-- **For other counts**: Adjust scoring in `scorePairing()` or selection logic in `generateRotationMatches()`
+- **Standard Americano (4-8 players)**: Edit `WHIST_MATRIX_*_PLAYERS` arrays in [utils/tournament.ts](utils/tournament.ts)
+- **Mix Americano (6/8 players)**: Edit `SCHEDULE_DATA_6_PLAYERS` or `SCHEDULE_DATA_8_PLAYERS` in [utils/MixAmericanoTournament.ts](utils/MixAmericanoTournament.ts)
 - Always test with `validateWhistMatrixBalance()` or manual pairing count verification
+- All matrices are hardcoded for perfect mathematical balance - changes require careful validation
 
 ### Adding New Point Type
 1. Add to `pointType` options in create tournament form
