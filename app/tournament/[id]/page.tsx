@@ -129,6 +129,10 @@ const EditPlayersDrawer = dynamic(
   () => import("@/app/ui_pattern/TournamentDetailPage/EditPlayersDrawer"),
   { ssr: false }
 );
+const EditMixPlayersDrawer = dynamic(
+  () => import("@/app/ui_pattern/TournamentDetailPage/EditMixPlayersDrawer"),
+  { ssr: false }
+);
 
 export default function TournamentDetailPage() {
   const params = useParams();
@@ -680,7 +684,7 @@ function DetailsTab({
             variant="outline"
             size="sm"
             className="h-9 px-3 text-sm font-semibold border-clx-border-textfield"
-            disabled={tournament.isEnded || isMixAmericano}
+            disabled={tournament.isEnded}
             onClick={() => setIsEditPlayersOpen(true)}
           >
             Edit
@@ -753,13 +757,22 @@ function DetailsTab({
         onUpdate={onTournamentUpdate}
       />
 
-      {/* Edit Players Drawer */}
-      <EditPlayersDrawer
-        isOpen={isEditPlayersOpen}
-        onClose={() => setIsEditPlayersOpen(false)}
-        tournament={tournament}
-        onUpdate={onTournamentUpdate}
-      />
+      {/* Edit Players Drawer - use appropriate drawer based on tournament type */}
+      {isMixAmericano ? (
+        <EditMixPlayersDrawer
+          isOpen={isEditPlayersOpen}
+          onClose={() => setIsEditPlayersOpen(false)}
+          tournament={tournament as import("@/utils/MixAmericanoTournament").MixTournament}
+          onUpdate={(updated) => onTournamentUpdate(updated as unknown as Tournament)}
+        />
+      ) : (
+        <EditPlayersDrawer
+          isOpen={isEditPlayersOpen}
+          onClose={() => setIsEditPlayersOpen(false)}
+          tournament={tournament}
+          onUpdate={onTournamentUpdate}
+        />
+      )}
     </div>
   );
 }

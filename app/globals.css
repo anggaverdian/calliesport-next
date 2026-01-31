@@ -425,9 +425,13 @@
 
   .user-drag-none {
     user-select: none;
+    -webkit-user-select: none;
     -webkit-user-drag: none;
     -khtml-user-drag: none;
     -moz-user-drag: none;
     -o-user-drag: none;
+    -webkit-touch-callout: none;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
   }
 }

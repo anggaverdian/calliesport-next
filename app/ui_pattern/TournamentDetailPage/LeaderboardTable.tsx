@@ -144,7 +144,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 user-drag-none select-none">
       {/* Leaderboard Sort By */}
       <div className="flex items-center w-full justify-between">
           <div className="w-auto"><span className="text-sm font-semibold">Sort by:</span></div>
@@ -287,7 +287,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           {/* Swap content based on selectedPairPlayer */}
           {selectedPairPlayer ? (
             // Detail View - Shows rounds with specific pair
-            <div className="flex-1 overflow-auto p-4 space-y-8 user-drag-none pb-40">
+            <div className="flex-1 overflow-auto p-4 space-y-8 user-drag-none select-none pb-40">
               {/* Header with back button and player names */}
               <div className="flex items-center gap-15">
                 <button
@@ -357,7 +357,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
             </div>
           ) : (
             // Summary View - Shows pairing stats table
-            <div className="flex-1 overflow-auto p-4 space-y-4 pb-40">
+            <div className="flex-1 overflow-auto p-4 space-y-4 pb-40 user-drag-none select-none">
               <h3>Head to head overview</h3>
               {/* Player Name Header */}
               <div className="flex items-center gap-3 border-1 rounded-xl p-3">

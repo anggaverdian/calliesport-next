@@ -615,6 +615,148 @@ export function regenerateMixAmericanoTournamentWithFirstMatch(
 // EXTEND TOURNAMENT (ADD MORE ROUNDS)
 // ============================================================================
 
+// ============================================================================
+// PLAYER EDITING FUNCTIONS
+// ============================================================================
+
+/**
+ * Update player genders in Mix Americano tournament
+ * This preserves all rounds and just updates the playerGenders map
+ */
+export function updateMixPlayerGenders(
+  tournamentId: string,
+  playerGenders: Record<string, Gender>
+): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Tournament must not be ended
+  if (tournament.isEnded) return null;
+
+  // Update playerGenders map
+  tournament.playerGenders = playerGenders;
+
+  updateMixTournament(tournament);
+  return tournament;
+}
+
+/**
+ * Rename a player in Mix Americano tournament
+ * This preserves all rounds and just updates the player name
+ */
+export function renameMixPlayer(
+  tournamentId: string,
+  oldName: string,
+  newName: string
+): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Tournament must not be ended
+  if (tournament.isEnded) return null;
+
+  // Sanitize new name
+  const sanitizedNewName = sanitizeString(newName.trim());
+  if (!sanitizedNewName) return null;
+
+  // Check if old player exists
+  const playerIndex = tournament.players.findIndex((p) => p === oldName);
+  if (playerIndex === -1) return null;
+
+  // Check if new name already exists (excluding current player)
+  const isDuplicate = tournament.players.some(
+    (p, i) => i !== playerIndex && p.toLowerCase() === sanitizedNewName.toLowerCase()
+  );
+  if (isDuplicate) return null;
+
+  // Update player name in players array
+  tournament.players[playerIndex] = sanitizedNewName;
+
+  // Update playerGenders map
+  const gender = tournament.playerGenders[oldName];
+  delete tournament.playerGenders[oldName];
+  tournament.playerGenders[sanitizedNewName] = gender;
+
+  // Update player name in all rounds
+  tournament.rounds.forEach((round) => {
+    round.matches.forEach((match) => {
+      match.teamA = match.teamA.map((p) => (p === oldName ? sanitizedNewName : p));
+      match.teamB = match.teamB.map((p) => (p === oldName ? sanitizedNewName : p));
+    });
+    round.restingPlayers = round.restingPlayers.map((p) =>
+      p === oldName ? sanitizedNewName : p
+    );
+  });
+
+  updateMixTournament(tournament);
+  return tournament;
+}
+
+/**
+ * Update Mix Americano tournament players
+ * This regenerates all rounds with the new player list
+ */
+export function updateMixAmericanoPlayers(
+  tournamentId: string,
+  newPlayers: MixPlayer[]
+): MixTournament | null {
+  const tournament = getMixTournamentById(tournamentId);
+
+  if (!tournament) return null;
+
+  // Tournament must not be ended
+  if (tournament.isEnded) return null;
+
+  // Validate new players
+  const validation = validateMixAmericanoPlayers(newPlayers);
+  if (!validation.valid) {
+    console.error(validation.error);
+    return null;
+  }
+
+  // Sanitize player names
+  const sanitizedPlayers = newPlayers.map((p) => ({
+    name: sanitizeString(p.name.trim()),
+    gender: p.gender,
+  }));
+
+  // Check for duplicate names
+  const names = sanitizedPlayers.map((p) => p.name.toLowerCase());
+  const uniqueNames = new Set(names);
+  if (uniqueNames.size !== names.length) {
+    console.error("Duplicate player names found");
+    return null;
+  }
+
+  // Create new playerGenders map
+  const playerGenders: Record<string, Gender> = {};
+  sanitizedPlayers.forEach((p) => {
+    playerGenders[p.name] = p.gender;
+  });
+
+  // Generate new rounds
+  const newRounds = generateMixAmericanoRounds(sanitizedPlayers);
+  if (newRounds.length === 0) {
+    console.error("Failed to generate rounds");
+    return null;
+  }
+
+  // Update tournament
+  tournament.players = sanitizedPlayers.map((p) => p.name);
+  tournament.playerGenders = playerGenders;
+  tournament.rounds = newRounds;
+  tournament.hasExtended = false;
+
+  updateMixTournament(tournament);
+  return tournament;
+}
+
+// ============================================================================
+// EXTEND TOURNAMENT (ADD MORE ROUNDS)
+// ============================================================================
+
 /**
  * Extend Mix Americano tournament with additional rounds (6 players only)
  * Can only be done once after all initial 9 rounds are completed

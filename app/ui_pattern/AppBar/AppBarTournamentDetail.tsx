@@ -247,7 +247,7 @@ export default function AppBarTournamentDetail({
   };
 
   return (
-    <nav className="w-full bg-white border-b border-neutral-100 sticky top-0 z-50">
+    <nav className="w-full bg-white border-b border-neutral-100 sticky top-0 z-50 isolate">
       {/* Back button */}
       <div className="flex flex-col gap-4 px-4 pt-2 pb-2">
 
@@ -320,12 +320,13 @@ export default function AppBarTournamentDetail({
         value={activeTab}
         onValueChange={(value) => {
           onTabChange(value as "round" | "ranking" | "details");
-          // Scroll to top when tab changes
-          window.scrollTo({ top: 0, behavior: "instant" });
+          // Scroll to top when tab changes - use smooth for better iOS support
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
-        className="px-4 pt-4 pb-3"
+        className="px-4 pt-4 pb-3 touch-action-manipulation"
+        style={{ touchAction: "manipulation" }}
       >
-        <TabsList className="w-full bg-transparent p-0 h-auto gap-2 tracking-tight">
+        <TabsList className="w-full bg-white p-0 h-auto gap-2 tracking-tight relative">
           <TabsTrigger
             value="round"
             className="flex-1 h-8 px-4 rounded-lg text-sm border-0 shadow-none data-[state=active]:bg-clx-bg-accent data-[state=active]:text-white data-[state=active]:font-medium data-[state=inactive]:bg-clx-bg-neutral-bold data-[state=inactive]:text-clx-text-default"
