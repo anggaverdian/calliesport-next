@@ -57,46 +57,47 @@ interface ScheduleEntry {
 const SCHEDULE_DATA_8_PLAYERS: ScheduleEntry[] = [
   { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
   { round: 2,  home: { m: "M3", w: "W3" }, away: { m: "M4", w: "W4" } },
-  { round: 3,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W1" } },
-  { round: 4,  home: { m: "M3", w: "W4" }, away: { m: "M4", w: "W3" } },
-  { round: 5,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W4" } },
-  { round: 6,  home: { m: "M3", w: "W1" }, away: { m: "M4", w: "W2" } },
-  { round: 7,  home: { m: "M1", w: "W4" }, away: { m: "M2", w: "W3" } },
-  { round: 8,  home: { m: "M3", w: "W2" }, away: { m: "M4", w: "W1" } },
-  { round: 9,  home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W3" } },
-  { round: 10, home: { m: "M2", w: "W2" }, away: { m: "M4", w: "W4" } },
-  { round: 11, home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
-  { round: 12, home: { m: "M2", w: "W4" }, away: { m: "M4", w: "W2" } },
-  { round: 13, home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W4" } },
-  { round: 14, home: { m: "M2", w: "W1" }, away: { m: "M4", w: "W3" } },
-  { round: 15, home: { m: "M1", w: "W4" }, away: { m: "M3", w: "W2" } },
-  { round: 16, home: { m: "M2", w: "W3" }, away: { m: "M4", w: "W1" } },
-  { round: 17, home: { m: "M1", w: "W1" }, away: { m: "M4", w: "W4" } },
-  { round: 18, home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W3" } },
-  { round: 19, home: { m: "M1", w: "W4" }, away: { m: "M4", w: "W1" } },
-  { round: 20, home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+  { round: 3,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
+  { round: 4,  home: { m: "M2", w: "W2" }, away: { m: "M4", w: "W4" } },
+  { round: 5,  home: { m: "M1", w: "W4" }, away: { m: "M4", w: "W1" } },
+  { round: 6,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+
+  { round: 7,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W1" } },
+  { round: 8,  home: { m: "M3", w: "W4" }, away: { m: "M4", w: "W3" } },
+  { round: 9,  home: { m: "M2", w: "W4" }, away: { m: "M4", w: "W2" } },
+  { round: 10, home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W3" } },
+  { round: 11, home: { m: "M1", w: "W1" }, away: { m: "M4", w: "W4" } },
+  { round: 12, home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+
+  { round: 13, home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W4" } },
+  { round: 14, home: { m: "M3", w: "W1" }, away: { m: "M4", w: "W2" } },
+  { round: 15, home: { m: "M2", w: "W1" }, away: { m: "M4", w: "W3" } },
+  { round: 16, home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W4" } },
+  { round: 17, home: { m: "M1", w: "W4" }, away: { m: "M2", w: "W3" } },
+  { round: 18, home: { m: "M3", w: "W2" }, away: { m: "M4", w: "W1" } },
+  
+  { round: 19, home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W3" } },
+  { round: 20, home: { m: "M1", w: "W4" }, away: { m: "M4", w: "W1" } },
   { round: 21, home: { m: "M1", w: "W2" }, away: { m: "M4", w: "W3" } },
   { round: 22, home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W4" } },
   { round: 23, home: { m: "M1", w: "W3" }, away: { m: "M4", w: "W2" } },
   { round: 24, home: { m: "M2", w: "W4" }, away: { m: "M3", w: "W1" } },
 ];
 
+
+
 // Schedule for 6 players (3 men, 3 women) - 9 rounds
 const SCHEDULE_DATA_6_PLAYERS: ScheduleEntry[] = [
   // --- PARTNER BLOCK 1 (M1-W1, M2-W2, M3-W3) ---
   { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
-  { round: 2,  home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W3" } },
-  { round: 3,  home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W3" } },
-
-  // --- PARTNER BLOCK 2 (M1-W2, M2-W3, M3-W1) ---
-  { round: 4,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W3" } },
-  { round: 5,  home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W1" } },
-  { round: 6,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W1" } },
-
-  // --- PARTNER BLOCK 3 (M1-W3, M2-W1, M3-W2) ---
-  { round: 7,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W1" } },
-  { round: 8,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W2" } },
-  { round: 9,  home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W2" } },
+  { round: 2,  home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W3" } },
+  { round: 3,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W1" } },
+  { round: 4,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+  { round: 5,  home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W2" } },
+  { round: 6,  home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W3" } },
+  { round: 7,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W3" } },
+  { round: 8,  home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W1" } },
+  { round: 9,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
 ];
 
 // Constants for 6 players
