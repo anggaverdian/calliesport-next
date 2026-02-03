@@ -18,15 +18,21 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover', // This is the critical part for transparency
+  themeColor: '#000000',
 }
 
 export const metadata: Metadata = {
   title: "Calliesport Padel",
-  description: "Score tracking app for your game",
-  icons: { icon: "/calliesport-logo.png" },
+  description: "Score tracking app for your padel tournaments",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/calliesport-logo.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: "black-translucent",
+    title: "Calliesport",
   },
 };
 

@@ -91,8 +91,8 @@ const SCHEDULE_DATA_6_PLAYERS: ScheduleEntry[] = [
   // --- PARTNER BLOCK 1 (M1-W1, M2-W2, M3-W3) ---
   { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
   { round: 2,  home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W3" } },
-  { round: 3,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W1" } },
-  { round: 4,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+  { round: 3,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+  { round: 4,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W1" } },
   { round: 5,  home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W2" } },
   { round: 6,  home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W3" } },
   { round: 7,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W3" } },

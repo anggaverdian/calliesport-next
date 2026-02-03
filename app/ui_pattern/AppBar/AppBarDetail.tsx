@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function AppBarDetail() {
   return (
-    <nav className="container sticky top-0 z-50 bg-white w-full border-b border-neutral-100">
+    <nav className="container sticky top-0 z-50 bg-white w-full border-b border-neutral-100 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center px-4 py-4">
           <div className="w-full bg-bg-dark">
               <div className="flex gap-4 content-center items-center">

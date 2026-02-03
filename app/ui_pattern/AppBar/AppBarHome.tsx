@@ -13,7 +13,7 @@ interface AppBarHomeProps {
 
 export default function AppBarHome({ activeTab = "tournaments", onTabChange }: AppBarHomeProps) {
   return (
-    <nav className="container w-full sticky top-0 z-50 bg-white">
+    <nav className="container w-full sticky top-0 z-50 bg-white pt-[env(safe-area-inset-top)]">
         <div className="flex items-center px-4 pt-4 pb-2">
           <div className="w-full bg-bg-dark">
               <div className="flex gap-4">
@@ -24,7 +24,7 @@ export default function AppBarHome({ activeTab = "tournaments", onTabChange }: A
                   </div>
               </div>
           </div>
-          <div className="flex gap-2 text-clx-icon-disabled invisible">
+          <div className="flex gap-2 text-clx-icon-disabled hidden">
               <div className="">
                     <MagnifyingGlassIcon size={24} />
               </div>

@@ -435,3 +435,34 @@
     overscroll-behavior: contain;
   }
 }
+
+/* iOS PWA fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Fix for iOS keyboard in PWA */
+  html {
+    height: -webkit-fill-available;
+  }
+
+  body {
+    min-height: -webkit-fill-available;
+  }
+
+  /* Prevent body scroll when drawer/modal is open */
+  body[data-scroll-locked] {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Fix drawer content when keyboard is open on iOS */
+[data-vaul-drawer] {
+  /* Use visual viewport height instead of 100vh */
+  max-height: 100dvh;
+}
+
+/* Ensure inputs in drawer don't cause layout shift */
+[data-vaul-drawer] input,
+[data-vaul-drawer] textarea {
+  font-size: 16px; /* Prevents iOS zoom on focus */
+}

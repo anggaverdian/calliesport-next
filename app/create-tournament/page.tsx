@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -97,6 +97,22 @@ export default function CreateTournament() {
   // Mix Americano specific state - players with gender
   const [mixPlayers, setMixPlayers] = useState<MixPlayer[]>([]);
   const [mixPlayerValidationError, setMixPlayerValidationError] = useState("");
+
+  // Store scroll position to restore when drawer closes (iOS PWA fix)
+  const scrollPositionRef = useRef(0);
+
+  const handleDrawerOpenChange = useCallback((open: boolean) => {
+    if (open) {
+      // Store current scroll position before opening drawer
+      scrollPositionRef.current = window.scrollY;
+    } else {
+      // Restore scroll position after drawer closes
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollPositionRef.current);
+      });
+    }
+    setIsDrawerOpen(open);
+  }, []);
 
   const {
     control,
@@ -273,7 +289,8 @@ export default function CreateTournament() {
 
         // Check if adding these players would exceed max limit
         if (totalPlayers > 8) {
-          setPlayerInputError(`Maximum 8 players allowed. You already have (${players.length} players).`);
+          setPlayerInputError(`Americano allows only max. 8 players.`);
+          //setPlayerInputError(`Current: ${players.length} / 8.`);
           return;
         }
 
@@ -528,7 +545,7 @@ export default function CreateTournament() {
                         <span className="text-xs">Total {isMixAmericano ? mixPlayers.length : players.length} players added</span>
                       </p>
                     </div>
-                    <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen} modal={true}>
+                    <Drawer open={isDrawerOpen} onOpenChange={handleDrawerOpenChange} modal={true}>
                       <DrawerTrigger asChild>
                         <Button
                           type="button"
@@ -548,7 +565,7 @@ export default function CreateTournament() {
                           </span>
                         </Button>
                       </DrawerTrigger>
-                      <DrawerContent className="rounded-none!" showHandle={true}>
+                      <DrawerContent className="rounded-none! max-h-[90vh]" showHandle={true}>
                         <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
                           <div className="flex items-center justify-between invisible">
                             <div className="flex items-center gap-3">
@@ -569,7 +586,7 @@ export default function CreateTournament() {
                           </div>
                         </DrawerHeader>
 
-                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24">
+                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[80vh] max-h-[80vh]">
                           {/* Input section */}
                           <div className="space-y-3">
                             <div className="space-y-1">

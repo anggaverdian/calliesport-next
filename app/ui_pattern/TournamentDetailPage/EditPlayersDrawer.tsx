@@ -254,7 +254,7 @@ export default function EditPlayersDrawer({
   return (
     <>
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="pb-2 max-h-[90vh]">
+        <DrawerContent className="pb-2 max-h-[90vh] rounded-none!">
           
           <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-auto">
             <div className="flex items-center justify-between">
@@ -276,7 +276,7 @@ export default function EditPlayersDrawer({
             </div>
           </DrawerHeader>
 
-          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4">
+          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[80vh] max-h-[80vh]">
             {/* Input section */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">

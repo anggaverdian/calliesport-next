@@ -102,8 +102,9 @@ export default function EditTournamentInfoDrawer({
   return (
     <>
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="pb-2">
-        <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-auto">
+      <DrawerContent className="pb-2 max-h-[90vh] rounded-none!">
+
+          <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <DrawerClose asChild>
@@ -122,7 +123,7 @@ export default function EditTournamentInfoDrawer({
               </Button>
             </div>
           </DrawerHeader>
-          <div className="flex flex-col gap-5 py-4 px-4 h-screen">
+          <div className="flex flex-col gap-5 py-4 px-4 min-h-[80vh] max-h-[80vh]">
             {/* Tournament name input */}
             <div className="flex flex-col gap-1">
               <Label className="text-base font-semibold text-clx-text-default">
