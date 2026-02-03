@@ -402,7 +402,7 @@ export default function EditMixPlayersDrawer({
             </div>
           </DrawerHeader>
 
-          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[80vh]">
+          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[80vh] max-h-[80vh]">
             {/* Input section */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">

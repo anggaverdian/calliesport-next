@@ -299,7 +299,7 @@ export default function CreateTournament() {
 
       setPlayerInputError("");
       setPlayerInput("");
-      //toast.success(`Added ${newPlayerNames.length} player(s)!`);
+      toast.success(`Added ${newPlayerNames.length} player(s)!`);
     }
   };
 
