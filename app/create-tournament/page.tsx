@@ -59,7 +59,7 @@ const teamTypes = [
   {
     id: "mix",
     name: "Mix Americano",
-    description: "The standard format specifically designed for mixed-gender pairs (man & woman).",
+    description: "The standard format designed for mixed-gender pairs men & women.",
     icon: thunderIcon
   },
   {

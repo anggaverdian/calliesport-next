@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { DotsThreeOutlineVerticalIcon, UsersFourIcon, CheckCircleIcon, TrashIcon, PencilSimpleIcon, XIcon, GenderMaleIcon, GenderFemaleIcon } from "@phosphor-icons/react";
+import { DotsThreeOutlineVerticalIcon, UsersFourIcon, CheckCircleIcon, TrashIcon, PencilSimpleIcon, XIcon, GenderMaleIcon, GenderFemaleIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+import ShareTournamentDrawer from "@/app/ui_pattern/ShareTournamentDrawer/ShareTournamentDrawer";
 import back_button from "../../../public/arrow_Left.svg";
 import { Tournament, teamTypeNames, TeamType, regenerateTournamentWithFirstMatch, endTournament, deleteTournament } from "@/utils/tournament";
 import { regenerateMixAmericanoTournamentWithFirstMatch } from "@/utils/MixAmericanoTournament";
@@ -95,6 +96,7 @@ export default function AppBarTournamentDetail({
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showShareDrawer, setShowShareDrawer] = useState(false);
 
   // Lineup selection state - for Mix Americano: A1=Man, A2=Woman, B1=Man, B2=Woman
   const [playerA1, setPlayerA1] = useState<string>("");
@@ -303,6 +305,14 @@ export default function AppBarTournamentDetail({
                     <CheckCircleIcon size={24} className={isTournamentCompleted ? "text-clx-icon-disabled" : "text-clx-icon-default"} />
                     End tournament
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setShowShareDrawer(true)}
+                    className="py-2 active:bg-neutral-200"
+                  >
+                    <ShareNetworkIcon size={24} className="text-clx-icon-default" />
+                    Share
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={() => setShowDeleteConfirmation(true)}
                     className="py-2 text-clx-icon-danger active:bg-red-50 hover:text-clx-text-danger!"
@@ -601,6 +611,14 @@ export default function AppBarTournamentDetail({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Share Tournament Drawer */}
+      <ShareTournamentDrawer
+        isOpen={showShareDrawer}
+        onClose={() => setShowShareDrawer(false)}
+        tournament={tournament}
+        onTournamentUpdate={onTournamentUpdate}
+      />
     </nav>
   );
 }

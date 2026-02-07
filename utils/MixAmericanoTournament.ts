@@ -55,7 +55,7 @@ interface ScheduleEntry {
 
 // Schedule for 8 players (4 men, 4 women) - 24 rounds
 const SCHEDULE_DATA_8_PLAYERS: ScheduleEntry[] = [
-  { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
+  /*{ round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
   { round: 2,  home: { m: "M3", w: "W3" }, away: { m: "M4", w: "W4" } },
   { round: 3,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
   { round: 4,  home: { m: "M2", w: "W2" }, away: { m: "M4", w: "W4" } },
@@ -81,7 +81,32 @@ const SCHEDULE_DATA_8_PLAYERS: ScheduleEntry[] = [
   { round: 21, home: { m: "M1", w: "W2" }, away: { m: "M4", w: "W3" } },
   { round: 22, home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W4" } },
   { round: 23, home: { m: "M1", w: "W3" }, away: { m: "M4", w: "W2" } },
-  { round: 24, home: { m: "M2", w: "W4" }, away: { m: "M3", w: "W1" } },
+  { round: 24, home: { m: "M2", w: "W4" }, away: { m: "M3", w: "W1" } },*/
+  
+    { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
+    { round: 2,  home: { m: "M3", w: "W3" }, away: { m: "M4", w: "W4" } },
+    { round: 3,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
+    { round: 4,  home: { m: "M2", w: "W4" }, away: { m: "M4", w: "W2" } },
+    { round: 5,  home: { m: "M1", w: "W4" }, away: { m: "M4", w: "W1" } },
+    { round: 6,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W2" } },
+    { round: 7,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W1" } },
+    { round: 8,  home: { m: "M3", w: "W4" }, away: { m: "M4", w: "W3" } },
+    { round: 9,  home: { m: "M1", w: "W1" }, away: { m: "M3", w: "W3" } },
+    { round: 10, home: { m: "M2", w: "W2" }, away: { m: "M4", w: "W4" } },
+    { round: 11, home: { m: "M1", w: "W2" }, away: { m: "M4", w: "W3" } },
+    { round: 12, home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W4" } },
+    { round: 13, home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W4" } },
+    { round: 14, home: { m: "M3", w: "W1" }, away: { m: "M4", w: "W2" } },
+    { round: 15, home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W4" } },
+    { round: 16, home: { m: "M2", w: "W1" }, away: { m: "M4", w: "W3" } },
+    { round: 17, home: { m: "M1", w: "W1" }, away: { m: "M4", w: "W4" } },
+    { round: 18, home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W3" } },
+    { round: 19, home: { m: "M1", w: "W4" }, away: { m: "M2", w: "W3" } },
+    { round: 20, home: { m: "M3", w: "W2" }, away: { m: "M4", w: "W1" } },
+    { round: 21, home: { m: "M1", w: "W4" }, away: { m: "M3", w: "W2" } },
+    { round: 22, home: { m: "M2", w: "W3" }, away: { m: "M4", w: "W1" } },
+    { round: 23, home: { m: "M1", w: "W3" }, away: { m: "M4", w: "W2" } },
+    { round: 24, home: { m: "M2", w: "W4" }, away: { m: "M3", w: "W1" } },
 ];
 
 
@@ -98,6 +123,32 @@ const SCHEDULE_DATA_6_PLAYERS: ScheduleEntry[] = [
   { round: 7,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W3" } },
   { round: 8,  home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W1" } },
   { round: 9,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
+
+  /* --- NEW ---
+  { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
+  { round: 2,  home: { m: "M3", w: "W3" }, away: { m: "M1", w: "W2" } },
+  { round: 3,  home: { m: "M2", w: "W3" }, away: { m: "M3", w: "W1" } },
+
+  { round: 4,  home: { m: "M2", w: "W1" }, away: { m: "M1", w: "W3" } },
+  { round: 5,  home: { m: "M3", w: "W2" }, away: { m: "M2", w: "W1" } },
+  { round: 6,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W2" } },
+
+  { round: 7,  home: { m: "M1", w: "W2" }, away: { m: "M2", w: "W3" } },
+  { round: 8,  home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W1" } },
+  { round: 9,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },*/
+
+  // NEW 2 ---
+  /*{ round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M1", w: "W2" } },
+  { round: 2,  home: { m: "M1", w: "W3" }, away: { m: "M2", w: "W1" } },
+  { round: 3,  home: { m: "M1", w: "W2" }, away: { m: "M3", w: "W3" } },
+
+  { round: 4,  home: { m: "M3", w: "W1" }, away: { m: "M1", w: "W2" } },
+  { round: 5,  home: { m: "M2", w: "W3" }, away: { m: "M1", w: "W1" } },
+  { round: 6,  home: { m: "M2", w: "W2" }, away: { m: "M3", w: "W3" } },
+
+  { round: 7,  home: { m: "M2", w: "W1" }, away: { m: "M3", w: "W2" } },
+  { round: 8,  home: { m: "M1", w: "W3" }, away: { m: "M3", w: "W1" } },
+  { round: 9,  home: { m: "M2", w: "W2" }, away: { m: "M1", w: "W3" } },*/
 ];
 
 // Constants for 6 players
@@ -212,6 +263,16 @@ export function generateMixAmericanoRounds(players: MixPlayer[]): MixRound[] {
   women.forEach((player, index) => {
     playerMap[`W${index + 1}`] = player.name;
   });
+
+  // Validate that all positions in the schedule are mapped
+  const allPositions = playerCount === 6
+    ? ["M1", "M2", "M3", "W1", "W2", "W3"]
+    : ["M1", "M2", "M3", "M4", "W1", "W2", "W3", "W4"];
+  const missingPositions = allPositions.filter((pos) => !playerMap[pos]);
+  if (missingPositions.length > 0) {
+    console.error("Missing player mapping for positions:", missingPositions);
+    return [];
+  }
 
   // Generate rounds from schedule
   const rounds: MixRound[] = [];
@@ -549,6 +610,16 @@ export function generateMixAmericanoRoundsWithFirstMatch(
     }
   });
 
+  // Validate that all positions in the schedule are mapped
+  const allPositionsToValidate = playerCount === 6
+    ? ["M1", "M2", "M3", "W1", "W2", "W3"]
+    : ["M1", "M2", "M3", "M4", "W1", "W2", "W3", "W4"];
+  const missingPos = allPositionsToValidate.filter((pos) => !playerMap[pos]);
+  if (missingPos.length > 0) {
+    console.error("Missing player mapping for positions:", missingPos, "playerMap:", playerMap);
+    return [];
+  }
+
   // Generate rounds from schedule
   const rounds: MixRound[] = [];
 
@@ -800,6 +871,14 @@ export function extendMixAmericanoTournament(tournamentId: string): MixTournamen
   shuffledWomen.forEach((name, index) => {
     playerMap[`W${index + 1}`] = name;
   });
+
+  // Validate that all positions are mapped
+  const requiredPositions = ["M1", "M2", "M3", "W1", "W2", "W3"];
+  const missingExtendPos = requiredPositions.filter((pos) => !playerMap[pos]);
+  if (missingExtendPos.length > 0) {
+    console.error("Missing player mapping for extension positions:", missingExtendPos);
+    return null;
+  }
 
   // Generate additional rounds using the same schedule
   const newRounds: MixRound[] = [];

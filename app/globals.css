@@ -21,11 +21,11 @@
   --color-neutral-gray-400: oklch(0.8845 0.006 59.64); /*#dcd8d5;*/
   --color-neutral-gray-500: oklch(0.6175 0.0051 78.29); /*#878582;*/
   --color-neutral-gray-600: oklch(0.4908 0.0061 67.68); /*#63605d;*/
-  --color-neutral-gray-800: #3c3a3a;
+  --color-neutral-gray-800: oklch(0.3505 0.0028 17.29); /*#3c3a3a;*/
   --color-neutral-dark: oklch(0.2938 0.0023 67.74); /*#2d2c2b;*/
-  --color-neutral-dark100: #252423;
+  --color-neutral-dark100: oklch(0.261 0.0024 67.72); /*#252423;*/
   --color-neutral-white: oklch(1 0 0); /*#ffffff;*/
-  --color-neutral-background: #f6f5f5;
+  --color-neutral-background: oklch(0.9709 0.0011 17.18); /*#f6f5f5;*/
   --color-neutral-form-border: oklch(0.8874 0 78.08); /*#dadada;*/
   --color-neutral-gray-75: oklch(0.9463 0.0062 75.41);
 

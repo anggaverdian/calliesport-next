@@ -47,7 +47,7 @@ const RoundSchema = z.object({
   restingPlayers: z.array(z.string()),
 });
 
-const TournamentSchema = z.object({
+export const TournamentSchema = z.object({
   id: z.string(),
   name: z.string(),
   teamType: z.enum(["standard", "mix", "team", "mexicano"]),
@@ -58,6 +58,8 @@ const TournamentSchema = z.object({
   createdAt: z.string(),
   hasExtended: z.boolean().optional(),
   isEnded: z.boolean().optional(),
+  completedAt: z.string().optional(),
+  shareId: z.string().optional(),
 });
 
 export const TournamentsArraySchema = z.array(TournamentSchema);

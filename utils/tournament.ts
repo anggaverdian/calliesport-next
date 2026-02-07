@@ -1,6 +1,6 @@
 // Tournament types and utilities
 import { match } from "assert";
-import { TournamentsArraySchema, sanitizeString, sanitizeStringArray } from "./form-schemas";
+import { TournamentsArraySchema, TournamentSchema, sanitizeString, sanitizeStringArray } from "./form-schemas";
 
 // ============================================================================
 // SHARED TYPES AND INTERFACES
@@ -27,6 +27,7 @@ export interface Tournament {
   hasExtended?: boolean;
   isEnded?: boolean;
   completedAt?: string;
+  shareId?: string; // Persistent share ID for sharing tournament link
 }
 
 export interface Match {
@@ -912,7 +913,27 @@ export function getTournaments(): Tournament[] {
       return result.data as Tournament[];
     }
 
-    // Data is corrupted or invalid - log error and return empty array
+    // Array validation failed - try to salvage valid tournaments individually
+    if (Array.isArray(parsed)) {
+      const validTournaments: Tournament[] = [];
+      for (const item of parsed) {
+        const itemResult = TournamentSchema.safeParse(item);
+        if (itemResult.success) {
+          validTournaments.push(itemResult.data as Tournament);
+        } else {
+          console.warn("Skipping corrupted tournament:", item?.id, item?.name, itemResult.error.message);
+        }
+      }
+
+      // Update localStorage with only valid tournaments to fix corruption
+      if (validTournaments.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(validTournaments));
+      }
+
+      return validTournaments;
+    }
+
+    // Data is not an array - completely corrupted
     console.error("Invalid tournament data in localStorage:", result.error.message);
     return [];
   } catch (error) {

@@ -272,7 +272,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
 
       {/* Player Summary Drawer */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-        <DrawerContent className="bg-white h-screen" showHandle={true}>
+        <DrawerContent className="bg-white max-h-[90vh]" showHandle={true}>
           <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
             <div className="flex items-center justify-between invisible">
               <DrawerTitle className="text-base font-bold text-clx-text-default">
@@ -287,7 +287,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
           {/* Swap content based on selectedPairPlayer */}
           {selectedPairPlayer ? (
             // Detail View - Shows rounds with specific pair
-            <div className="flex-1 overflow-auto p-4 space-y-8 user-drag-none select-none pb-40">
+            <div className="flex-1 overflow-auto p-4 space-y-8 user-drag-none select-none pb-40 min-h-[80vh] max-h-[80vh]">
               {/* Header with back button and player names */}
               <div className="flex items-center gap-15">
                 <button
@@ -357,7 +357,7 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
             </div>
           ) : (
             // Summary View - Shows pairing stats table
-            <div className="flex-1 overflow-auto p-4 space-y-4 pb-40 user-drag-none select-none">
+            <div className="flex-1 overflow-auto p-4 space-y-4 pb-40 user-drag-none select-none min-h-[80vh] max-h-[80vh]">
               <h3>Head to head overview</h3>
               {/* Player Name Header */}
               <div className="flex items-center gap-3 border-1 rounded-xl p-3">
