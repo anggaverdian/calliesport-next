@@ -177,6 +177,10 @@ const onSubmit = (data: FormData) => {
 2. Update `getMaxScore()` switch statement
 3. Update `getPointTypeLabel()` for display
 
+## Text Casing
+- **Sentence case everywhere**: All UI text — titles, buttons, labels, tabs, menu items, toasts, descriptions — must use **sentence case** (capitalize only the first word and proper nouns). Examples: "Share tournament", "Generate share link", "Copy link", "End tournament".
+- Never use Title Case (e.g., "Share Tournament") or ALL CAPS (e.g., "SHARE") unless it is a brand name or acronym.
+
 ## UI & Iconography Norms
 - **Primary Icon Library:** Always use **Phosphor Icons**. Do not use Lucide, Heroicons, or FontAwesome.
 - **Library Package:** Use `@phosphor-icons/react`.

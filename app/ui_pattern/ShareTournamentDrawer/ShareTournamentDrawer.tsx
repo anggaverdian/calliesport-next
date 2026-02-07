@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { XIcon, CopyIcon, CheckIcon, SpinnerGapIcon, ShareNetworkIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,13 +34,54 @@ export default function ShareTournamentDrawer({
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasTriggeredShare = useRef(false);
 
-  // If tournament already has a shareId, show the existing URL
+  // Auto-trigger share/update when drawer opens
   useEffect(() => {
-    if (isOpen && tournament.shareId) {
-      setShareUrl(getShareUrl(tournament.shareId));
+    if (isOpen && !hasTriggeredShare.current) {
+      hasTriggeredShare.current = true;
+
+      if (tournament.shareId) {
+        // Already shared before — show URL immediately and update in background
+        setShareUrl(getShareUrl(tournament.shareId));
+        handleShareUpdate();
+      }
     }
-  }, [isOpen, tournament.shareId]);
+
+    if (!isOpen) {
+      hasTriggeredShare.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const handleShareUpdate = async () => {
+    setIsSharing(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tournament),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to update share link");
+      }
+
+      toast.success("Share link updated!");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to update share link";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const handleShare = async () => {
     setIsSharing(true);
@@ -61,16 +102,14 @@ export default function ShareTournamentDrawer({
         throw new Error(data.error || "Failed to create share link");
       }
 
-      // Save shareId to tournament in localStorage (only on first share)
-      if (!tournament.shareId) {
-        const updatedTournament = { ...tournament, shareId: data.shareId };
-        updateTournament(updatedTournament);
-        onTournamentUpdate?.(updatedTournament);
-      }
+      // Save shareId to tournament in localStorage
+      const updatedTournament = { ...tournament, shareId: data.shareId };
+      updateTournament(updatedTournament);
+      onTournamentUpdate?.(updatedTournament);
 
       const url = getShareUrl(data.shareId);
       setShareUrl(url);
-      toast.success(tournament.shareId ? "Share link updated!" : "Share link created!");
+      toast.success("Share link created!");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create share link";
       setError(errorMessage);
@@ -96,7 +135,6 @@ export default function ShareTournamentDrawer({
   };
 
   const handleClose = () => {
-    // Reset state when closing (but keep shareUrl if tournament has shareId)
     if (!tournament.shareId) {
       setShareUrl(null);
     }
@@ -111,7 +149,7 @@ export default function ShareTournamentDrawer({
         <DrawerHeader className="border-b border-clx-border-subtle px-4 pb-3 pt-0">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-base font-semibold text-clx-text-default">
-              Share Tournament
+              Share tournament
             </DrawerTitle>
             <DrawerClose asChild>
               <Button variant="ghost" size="icon" aria-label="Close">
@@ -155,7 +193,7 @@ export default function ShareTournamentDrawer({
                     Creating link...
                   </>
                 ) : (
-                  "Generate Share Link"
+                  "Generate share link"
                 )}
               </Button>
             </div>
@@ -167,7 +205,9 @@ export default function ShareTournamentDrawer({
                   <CheckIcon size={24} className="text-green-600" />
                 </div>
                 <p className="text-sm text-clx-text-secondary text-center">
-                  Your share link is ready! Anyone with this link can view the tournament.
+                  {isSharing
+                    ? "Updating tournament data..."
+                    : "Your share link is ready! Anyone with this link can view the tournament."}
                 </p>
               </div>
 
@@ -194,22 +234,6 @@ export default function ShareTournamentDrawer({
                   </Button>
                 </div>
               </div>
-
-              <Button
-                onClick={handleShare}
-                disabled={isSharing}
-                variant="outline"
-                className="w-full"
-              >
-                {isSharing ? (
-                  <>
-                    <SpinnerGapIcon size={20} className="animate-spin mr-2" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update Share Link"
-                )}
-              </Button>
             </div>
           )}
         </div>
@@ -217,7 +241,7 @@ export default function ShareTournamentDrawer({
         <DrawerFooter className="border-t border-clx-border-subtle">
           {shareUrl ? (
             <Button onClick={handleCopy} className="w-full h-11">
-              {isCopied ? "Copied!" : "Copy Link"}
+              {isCopied ? "Copied!" : "Copy link"}
             </Button>
           ) : null}
           <DrawerClose asChild>

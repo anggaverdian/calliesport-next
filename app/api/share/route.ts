@@ -53,14 +53,20 @@ export async function POST(request: Request) {
 
     const tournamentData = validationResult.data;
 
-    // If tournament already has a shareId, update the existing record
+    // If tournament already has a shareId, upsert the record
     if (tournamentData.shareId) {
       const { error } = await supabase
         .from("shared_tournaments")
-        .update({ tournament_data: tournamentData })
-        .eq("share_id", tournamentData.shareId);
+        .upsert(
+          {
+            share_id: tournamentData.shareId,
+            tournament_data: tournamentData,
+          },
+          { onConflict: "share_id" }
+        );
 
       if (error) {
+        console.log("[share/POST] Upsert error:", error.message, error.code);
         return NextResponse.json(
           {
             success: false,
