@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { generateShareId } from "@/utils/share";
 
 // Tournament validation schema (matches localStorage schema)
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
     // If tournament already has a shareId, upsert the record
     if (tournamentData.shareId) {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from("shared_tournaments")
         .upsert(
           {
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     const shareId = generateShareId();
 
     // Insert into Supabase
-    const { error } = await supabase.from("shared_tournaments").insert({
+    const { error } = await getSupabase().from("shared_tournaments").insert({
       share_id: shareId,
       tournament_data: tournamentData,
     });
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       // Handle unique constraint violation (retry with new ID)
       if (error.code === "23505") {
         const retryShareId = generateShareId();
-        const { error: retryError } = await supabase
+        const { error: retryError } = await getSupabase()
           .from("shared_tournaments")
           .insert({
             share_id: retryShareId,

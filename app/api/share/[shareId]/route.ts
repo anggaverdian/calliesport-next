@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import { isValidShareId } from "@/utils/share";
 
 export async function GET(
@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("shared_tournaments")
       .select("tournament_data")
       .eq("share_id", shareId)
