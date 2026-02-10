@@ -1111,10 +1111,10 @@ function generateAdditionalRounds(
   existingRounds: Round[],
   additionalRoundsCount: number
 ): Round[] {
-  // Do NOT shuffle players when extending tournament
-  // The existing rounds already established the pairing history
-  // Shuffling would break the balance tracking
-  const orderedPlayers = [...players];
+  // Shuffle players for the new set of rounds
+  // Each set is self-contained via the Whist matrix, so reshuffling
+  // produces fresh matchups while maintaining balance within the new set
+  const orderedPlayers = shuffleArray(players);
 
   const startingRoundIndex = existingRounds.length;
   let selectedMatches: Match[];
