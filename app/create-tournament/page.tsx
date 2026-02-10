@@ -537,7 +537,7 @@ export default function CreateTournament() {
 
               {/* Players section */}
               <Field>
-                <div className="space-y-4 pb-20 pt-2">
+                <div className="space-y-4 pb-12 pt-2">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-base font-semibold text-clx-text-default">Players</p>
