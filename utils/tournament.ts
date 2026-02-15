@@ -188,7 +188,6 @@ const WHIST_MATRIX_4_PLAYERS: [number, number, number, number][] = [
 // Perfect Whist Tournament Matrix for 5 players (10 rounds)
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-4
 // Resting player for each round is the one not in the match
-// 4x play in a row = all player
 
 const WHIST_MATRIX_5_PLAYERS: [number, number, number, number][] = [
 // --- CYCLE 1 ---
@@ -219,11 +218,6 @@ const WHIST_MATRIX_5_PLAYERS: [number, number, number, number][] = [
 // Perfect Whist Tournament Matrix for 6 players (15 rounds)
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-5
 // This matrix guarantees:
-// - Each pair partners exactly 2 times
-// - Each pair opposes exactly 4 times
-// - Each player plays exactly 10 matches
-// 3 Plays 4x in a row = 5-6-7-8
-// 4 Plays 4x in a row = 8-9-10-11
 const WHIST_MATRIX_6_PLAYERS: [number, number, number, number][] = [
   [0, 1, 2, 3], //R1
   [4, 5, 0, 1], //R2
@@ -259,8 +253,6 @@ const WHIST_MATRIX_6_PLAYERS: [number, number, number, number][] = [
 // Perfect Whist Tournament Matrix for 7 players (21 rounds)
 // Format: [teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-6
 // Resting player for each round is the one not in the match (7 - 4 = 3 resting)
-// Max consecutive play = 4
-// Max consecutive rest = 3
 const WHIST_MATRIX_7_PLAYERS: [number, number, number, number][] = [
     // --- SET 1 ---
     [0, 1, 2, 4], // Round 1
