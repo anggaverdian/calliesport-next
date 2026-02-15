@@ -101,8 +101,8 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
           {/* Team A */}
           <div className="flex flex-col gap-3 w-[120px]">
             {match.teamA.map((player, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <div className={`flex items-center justify-center rounded-full size-6 ${isCompleted ? getAvatarStyle(teamAWins) : "bg-orange-50"}`}>
+              <div key={index} className="flex items-center gap-3 min-w-0 w-full justify-start">
+                <div className={`flex items-center justify-center rounded-full size-6 shrink-0 ${isCompleted ? getAvatarStyle(teamAWins) : "bg-orange-50"}`}>
                   <UserIcon size={12} weight="fill" className={isCompleted ? getAvatarIconStyle(teamAWins) : "text-orange-500"} />
                 </div>
                 <span className={`text-base truncate ${isCompleted ? getPlayerTextStyle(teamAWins) : "text-clx-text-default"}`}>{player}</span>
@@ -116,9 +116,9 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
           {/* Team B */}
           <div className="flex flex-col gap-3 items-end w-[120px]">
             {match.teamB.map((player, index) => (
-              <div key={index} className="flex items-center gap-3">
+              <div key={index} className="flex items-center gap-3 min-w-0 w-full justify-end">
                 <span className={`text-base truncate ${isCompleted ? getPlayerTextStyle(teamBWins) : "text-clx-text-default"}`}>{player}</span>
-                <div className={`flex items-center justify-center rounded-full size-6 ${isCompleted ? getAvatarStyle(teamBWins) : "bg-orange-50"}`}>
+                <div className={`flex items-center justify-center rounded-full size-6 shrink-0 ${isCompleted ? getAvatarStyle(teamBWins) : "bg-orange-50"}`}>
                   <UserIcon size={12} weight="fill" className={isCompleted ? getAvatarIconStyle(teamBWins) : "text-orange-500"} />
                 </div>
               </div>
