@@ -247,7 +247,7 @@ export default function ShareTournamentDrawer({
               size="lg"
               className="bg-clx-bg-accent font-semibold"
             >
-              Open link
+              Share
             </Button>
           )}
         </DialogFooter>
