@@ -169,7 +169,7 @@ export default function ShareTournamentDrawer({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="px-0 py-3" showCloseButton={false} onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent className="px-0 py-3" showCloseButton={true} onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-4 pb-2 bg-neutral-50 text-left sm:text-left border-b">
           <DialogTitle className="font-semibold text-base">
             Share tournament
