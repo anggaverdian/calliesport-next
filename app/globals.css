@@ -415,7 +415,7 @@
     color: var(--color-clx-text-default);
   }
 
-  body {
+  html, body {
     -webkit-user-select: none;
     user-select: none;
     -webkit-user-drag: none;

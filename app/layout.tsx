@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Quantico, Funnel_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import EdgeSwipeBlocker from "./ui_pattern/EdgeSwipeBlocker";
 
 const GlobalFont = DM_Sans({
   weight: ["400", "500", "600", "700"],
@@ -44,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="">
       <body className={`${GlobalFont.className} antialiased max-w-[393px] min-w-[393px] min-h-screen overflow-x-hidden mx-auto`}>
+        <EdgeSwipeBlocker />
         {children}
         <Toaster position="top-center" />
       </body>
