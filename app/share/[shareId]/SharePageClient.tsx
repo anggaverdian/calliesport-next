@@ -307,7 +307,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
           <p className="text-sm text-clx-text-secondary">
             {getTeamTypeLabel(tournament.teamType)}, {tournament.players.length} players, {getPointTypeLabel(tournament.pointType)}
           </p>
-          <div className="flex items-center gap-1.5 text-sm text-clx-text-secondary">
+          <div className="flex items-center gap-1.5 text-sm text-clx-text-secondary hidden">
             <CalendarBlankIcon size={16} />
             <span>{formatDate(tournament.createdAt)}</span>
           </div>

@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { XIcon, CopyIcon, CheckIcon, SpinnerGapIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+import { CopyIcon, CheckIcon, SpinnerGapIcon } from "@phosphor-icons/react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Tournament, updateTournament } from "@/utils/tournament";
@@ -36,15 +37,18 @@ export default function ShareTournamentDrawer({
   const [error, setError] = useState<string | null>(null);
   const hasTriggeredShare = useRef(false);
 
-  // Auto-trigger share/update when drawer opens
+  // Auto-trigger share when dialog opens
   useEffect(() => {
     if (isOpen && !hasTriggeredShare.current) {
       hasTriggeredShare.current = true;
 
       if (tournament.shareId) {
-        // Already shared before — show URL immediately and update in background
+        // Already shared — show URL immediately and update data in background
         setShareUrl(getShareUrl(tournament.shareId));
         handleShareUpdate();
+      } else {
+        // First time sharing — auto-generate link
+        handleShare();
       }
     }
 
@@ -72,8 +76,6 @@ export default function ShareTournamentDrawer({
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Failed to update share link");
       }
-
-      toast.success("Share link updated!");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update share link";
       setError(errorMessage);
@@ -109,7 +111,6 @@ export default function ShareTournamentDrawer({
 
       const url = getShareUrl(data.shareId);
       setShareUrl(url);
-      toast.success("Share link created!");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create share link";
       setError(errorMessage);
@@ -127,11 +128,15 @@ export default function ShareTournamentDrawer({
       setIsCopied(true);
       toast.success("Link copied to clipboard!");
 
-      // Reset copy state after 2 seconds
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
       toast.error("Failed to copy link");
     }
+  };
+
+  const handleOpenLink = () => {
+    if (!shareUrl) return;
+    window.open(shareUrl, "_blank");
   };
 
   const handleClose = () => {
@@ -144,87 +149,56 @@ export default function ShareTournamentDrawer({
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DrawerContent className="max-h-[85vh]" showHandle={true}>
-        <DrawerHeader className="border-b border-clx-border-subtle px-4 pb-3 pt-0">
-          <div className="flex items-center justify-between pt-2 hidden">
-            <DrawerTitle className="text-xl font-semibold text-clx-text-default">
-              Share tournament
-            </DrawerTitle>
-            <DrawerClose asChild>
-              <Button variant="ghost" size="icon" aria-label="Close">
-                <XIcon size={24} />
-              </Button>
-            </DrawerClose>
-          </div>
-          <DrawerDescription className="sr-only">
-            Generate a shareable link for this tournament
-          </DrawerDescription>
-        </DrawerHeader>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="px-0 py-3" showCloseButton={false} onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogHeader className="px-4 pb-2 bg-neutral-50 text-left sm:text-left border-b">
+          <DialogTitle className="font-semibold text-base">
+            Share tournament
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Share a link to this tournament
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 p-4 space-y-4">
-          {!shareUrl ? (
-            // Initial state - show share button
-            <div className="flex flex-col items-center justify-center py-4 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
-                <ShareNetworkIcon size={40} className="text-neutral-950" />
-              </div>
-              <div className="text-center space-y-2">
-                <h3 className="text-xl font-semibold text-clx-text-default">
-                  Share &quot;{tournament.name}&quot;
-                </h3>
-                <p className="text-base text-clx-text-secondary">
-                  Generate a public link that anyone can use to view the tournament leaderboard and match results.
-                </p>
-              </div>
+        <div className="px-4 flex flex-col gap-3 items-center">
+          <Image
+            src="/cloud.svg"
+            alt="Cloud"
+            width={96}
+            height={48}
+          />
 
-              {error && (
-                <p className="text-sm text-clx-text-danger text-center">{error}</p>
-              )}
-
+          {isSharing && !shareUrl ? (
+            <div className="flex items-center gap-2 text-sm text-clx-text-secondary">
+              <SpinnerGapIcon size={20} className="animate-spin" />
+              <span>Generating link...</span>
+            </div>
+          ) : error && !shareUrl ? (
+            <div className="w-full space-y-3">
+              <p className="text-sm text-clx-text-danger text-center">{error}</p>
               <Button
                 onClick={handleShare}
-                disabled={isSharing}
-                className="w-full max-w-[280px] h-11"
+                className="w-full h-11 bg-clx-bg-accent"
               >
-                {isSharing ? (
-                  <>
-                    <SpinnerGapIcon size={20} className="animate-spin mr-2" />
-                    Creating link...
-                  </>
-                ) : (
-                  "Generate share link"
-                )}
+                Try again
               </Button>
             </div>
-          ) : (
-            // Success state - show share URL
-            <div className="space-y-4">
-              <div className="flex flex-col items-center py-4 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckIcon size={24} className="text-green-600" />
-                </div>
-                <p className="text-sm text-clx-text-secondary text-center">
-                  {isSharing
-                    ? "Updating tournament data..."
-                    : "Your share link is ready! Anyone with this link can view the tournament."}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-clx-text-default">
-                  Share link
+          ) : shareUrl ? (
+            <>
+              <div className="w-full space-y-1">
+                <label className="text-base font-semibold text-clx-text-default">
+                  Get link
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-3 items-end">
                   <Input
                     value={shareUrl}
                     readOnly
-                    className="flex-1 text-sm bg-clx-bg-neutral-subtle"
+                    className="flex-1 h-11 text-base bg-clx-bg-neutral-bold border-clx-bg-neutral-bold text-clx-bg-accent"
                   />
                   <Button
                     onClick={handleCopy}
                     variant="outline"
-                    className="shrink-0 h-10 px-3"
+                    className="shrink-0 size-11 p-0 rounded-lg border-clx-border-textfield"
                   >
                     {isCopied ? (
                       <CheckIcon size={20} className="text-clx-icon-success" />
@@ -234,23 +208,31 @@ export default function ShareTournamentDrawer({
                   </Button>
                 </div>
               </div>
-            </div>
-          )}
+
+              <p className="text-sm text-clx-text-secondary w-full">
+                Share the link to your player. Anyone with this link can view and follow leaderboard or when to play from their own phone.
+              </p>
+            </>
+          ) : null}
         </div>
 
-        <DrawerFooter className="border-t border-clx-border-subtle">
-          {shareUrl ? (
-            <Button onClick={handleCopy} className="w-full h-11">
-              {isCopied ? "Copied!" : "Copy link"}
+        <DialogFooter className="flex flex-row items-center justify-end px-4 mt-1 gap-2 sm:gap-2 border-t pt-3">
+          <DialogClose asChild>
+            <Button variant="ghost" className="text-clx-text-secondary">
+              Close
             </Button>
-          ) : null}
-          <DrawerClose asChild>
-            <Button variant="ghost" className="w-full">
-              {shareUrl ? "Done" : "Cancel"}
+          </DialogClose>
+          {shareUrl && (
+            <Button
+              onClick={handleOpenLink}
+              size="lg"
+              className="bg-clx-bg-accent font-semibold"
+            >
+              Open link
             </Button>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

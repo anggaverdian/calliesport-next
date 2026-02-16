@@ -380,7 +380,7 @@ export default function AppBarTournamentDetail({
             </DrawerHeader>
 
             {isRegenerating ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 gap-4 min-h-[50vh] max-h-[70vh]">
                 <div className="w-full max-w-xs space-y-4">
                   <p className="text-center text-sm text-clx-text-secondary">Regenerating rounds...</p>
                   <Progress value={regenerateProgress} aria-label="Regeneration progress" className="[&>div]:bg-blue-500" />
