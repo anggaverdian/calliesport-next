@@ -64,8 +64,8 @@ const teamTypes = [
   },
   {
     id: "team",
-    name: "Team Americano",
-    description: "Fixed partner for the entire tournament use team score point.",
+    name: "Fixed Partner",
+    description: "Partner up with your team for the entire tournament use team score point.",
     icon: upIcon
   },
 ];
