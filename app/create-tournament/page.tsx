@@ -586,7 +586,7 @@ export default function CreateTournament() {
                           </div>
                         </DrawerHeader>
 
-                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[80vh] max-h-[80vh]">
+                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[70vh] max-h-[70vh]">
                           {/* Input section */}
                           <div className="space-y-3">
                             <div className="space-y-1">
