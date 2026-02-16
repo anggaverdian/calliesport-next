@@ -294,7 +294,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
     <div className="min-h-screen bg-white">
       <div className="max-w-[393px] mx-auto pb-12">
         {/* Header */}
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-4 pt-[max(16px,env(safe-area-inset-top))] pb-2">
           <div className="flex gap-3 items-center">
             <Image src={Brand_Logo} width={32} height={32} alt="Calliesport" />
             <span className="text-base font-bold text-clx-text-default">Calliesport</span>

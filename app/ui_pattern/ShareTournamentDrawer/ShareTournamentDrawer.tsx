@@ -134,9 +134,28 @@ export default function ShareTournamentDrawer({
     }
   };
 
-  const handleOpenLink = () => {
+  const handleOpenLink = async () => {
     if (!shareUrl) return;
-    window.open(shareUrl, "_blank");
+
+    // In iOS standalone PWA, same-origin window.open stays inside the PWA.
+    // Use the Web Share API (native share sheet) when in standalone mode,
+    // which lets the user open the link in their default browser.
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      ("standalone" in navigator && (navigator as { standalone?: boolean }).standalone);
+
+    if (isStandalone && navigator.share) {
+      try {
+        await navigator.share({
+          title: tournament.name,
+          url: shareUrl,
+        });
+      } catch {
+        // User cancelled share sheet — ignore
+      }
+    } else {
+      window.open(shareUrl, "_blank");
+    }
   };
 
   const handleClose = () => {
