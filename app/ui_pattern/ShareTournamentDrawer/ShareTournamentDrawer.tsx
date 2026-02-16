@@ -147,8 +147,8 @@ export default function ShareTournamentDrawer({
     <Drawer open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DrawerContent className="max-h-[85vh]" showHandle={true}>
         <DrawerHeader className="border-b border-clx-border-subtle px-4 pb-3 pt-0">
-          <div className="flex items-center justify-between">
-            <DrawerTitle className="text-base font-semibold text-clx-text-default">
+          <div className="flex items-center justify-between pt-2 hidden">
+            <DrawerTitle className="text-xl font-semibold text-clx-text-default">
               Share tournament
             </DrawerTitle>
             <DrawerClose asChild>
@@ -165,15 +165,15 @@ export default function ShareTournamentDrawer({
         <div className="flex-1 p-4 space-y-4">
           {!shareUrl ? (
             // Initial state - show share button
-            <div className="flex flex-col items-center justify-center py-8 space-y-4">
-              <div className="w-16 h-16 rounded-full bg-clx-bg-primary-surface flex items-center justify-center">
-                <ShareNetworkIcon size={32} className="text-clx-icon-primary" />
+            <div className="flex flex-col items-center justify-center py-4 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                <ShareNetworkIcon size={40} className="text-neutral-950" />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-base font-semibold text-clx-text-default">
+                <h3 className="text-xl font-semibold text-clx-text-default">
                   Share &quot;{tournament.name}&quot;
                 </h3>
-                <p className="text-sm text-clx-text-secondary max-w-[280px]">
+                <p className="text-base text-clx-text-secondary">
                   Generate a public link that anyone can use to view the tournament leaderboard and match results.
                 </p>
               </div>

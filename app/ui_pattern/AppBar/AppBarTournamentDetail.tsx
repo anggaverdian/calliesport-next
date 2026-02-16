@@ -571,10 +571,10 @@ export default function AppBarTournamentDetail({
                 </AlertDescription>
               </Alert>
               <div className="text-sm">
-                <p>Are you sure want to adjust lineup? This action cannot be undone.</p>
+                <span>Are you sure want to adjust lineup? This action cannot be undone.</span>
               </div>
           </div>
-          <DialogFooter className="px-4 mt-1 gap-2 sm:gap-2">
+          <DialogFooter className="flex flex-row items-center justify-end px-4 mt-1 gap-2 sm:gap-2 border-t pt-3">
             <Button variant="ghost" onClick={() => setShowResetConfirmation(false)} className="text-clx-text-secondary">
               Cancel
             </Button>
