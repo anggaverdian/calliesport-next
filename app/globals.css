@@ -421,6 +421,7 @@
     -webkit-user-drag: none;
     user-drag: none;
     touch-action: pan-y;
+    overscroll-behavior-x: none;
   }
 
   .user-drag-none {
