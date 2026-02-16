@@ -91,7 +91,7 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
           </button>
         </div>
         <button type="button" className="p-2">
-          <DotsThreeOutlineIcon size={20} weight="fill" className="text-clx-icon-default" />
+          <DotsThreeOutlineIcon size={20} weight="fill" className="text-clx-icon-default invisible" />
         </button>
       </div>
 

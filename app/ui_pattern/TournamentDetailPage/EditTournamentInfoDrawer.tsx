@@ -123,7 +123,7 @@ export default function EditTournamentInfoDrawer({
               </Button>
             </div>
           </DrawerHeader>
-          <div className="flex flex-col gap-5 py-4 px-4 min-h-[80vh] max-h-[80vh]">
+          <div className="flex flex-col gap-5 py-4 px-4 min-h-[65vh] max-h-[80vh]">
             {/* Tournament name input */}
             <div className="flex flex-col gap-1">
               <Label className="text-base font-semibold text-clx-text-default">
@@ -148,7 +148,7 @@ export default function EditTournamentInfoDrawer({
                 </span>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-2 overflow-visible pb-2">
                 {POINT_TYPE_OPTIONS.map((option) => {
                   const isSelected = pointType === option.value;
                   return (

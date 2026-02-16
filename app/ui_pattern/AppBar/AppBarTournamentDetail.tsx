@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { DotsThreeOutlineVerticalIcon, UsersFourIcon, CheckCircleIcon, TrashIcon, PencilSimpleIcon, XIcon, GenderMaleIcon, GenderFemaleIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+import { DotsThreeOutlineVerticalIcon, UsersFourIcon, CheckCircleIcon, TrashIcon, PencilSimpleIcon, XIcon, GenderMaleIcon, GenderFemaleIcon, ShareNetworkIcon, WarningIcon } from "@phosphor-icons/react";
 import ShareTournamentDrawer from "@/app/ui_pattern/ShareTournamentDrawer/ShareTournamentDrawer";
 import back_button from "../../../public/arrow_Left.svg";
 import { Tournament, teamTypeNames, TeamType, regenerateTournamentWithFirstMatch, endTournament, deleteTournament } from "@/utils/tournament";
@@ -26,6 +26,8 @@ import thunderIcon from "../../../public/thunder.svg";
 import chartIcon from "../../../public/charts.svg";
 import upIcon from "../../../public/Up.svg";
 import starIcon from "../../../public/Star.svg";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import {
   DropdownMenu,
@@ -358,11 +360,11 @@ export default function AppBarTournamentDetail({
         </TabsList>
       </Tabs>
       <Drawer open={showEditLineup} onOpenChange={setShowEditLineup}>
-          <DrawerContent className="h-full max-h-screen rounded-none!" showHandle={false}>
-          <DrawerHeader className="bg-clx-bg-neutral-subtle border-b border-clx-border-default px-4 pb-2 pt-3 shrink-0">
+          <DrawerContent className="max-h-[90vh] rounded-none!" showHandle={false}>
+            <DrawerHeader className="bg-neutral-50 border-b border-clx-border-default px-4 pb-1 pt-2 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <DrawerTitle className="text-sm font-semibold text-clx-text-default">
+                  <DrawerTitle className="text-base font-semibold text-clx-text-default">
                     Adjust lineup
                   </DrawerTitle>
                 </div>
@@ -386,7 +388,7 @@ export default function AppBarTournamentDetail({
               </div>
             ) : (
               <>
-                <div className="flex-1 p-4 overflow-y-auto">
+                <div className="flex-1 p-4 min-h-[50vh] max-h-[70vh]">
                   <div className="pb-5 text-sm">
                     <p>You are able to set the first match player. Please select which player you want to select. This setup will apply for the first round.</p>
                   </div>
@@ -540,7 +542,7 @@ export default function AppBarTournamentDetail({
                   </div>
                 </div>
                 <DrawerFooter>
-                  <Button onClick={handleProceed} disabled={!isLineupComplete} className="h-11 disabled:bg-clx-bg-disabled disabled:text-clx-text-disabled">
+                  <Button onClick={handleProceed} disabled={!isLineupComplete} className="bg-clx-bg-accent h-11 disabled:bg-clx-bg-disabled disabled:text-clx-text-disabled">
                     Proceed
                   </Button>
                   <DrawerClose asChild>
@@ -554,19 +556,30 @@ export default function AppBarTournamentDetail({
 
       {/* Reset Confirmation Dialog */}
       <Dialog open={showResetConfirmation} onOpenChange={setShowResetConfirmation}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset All Rounds?</DialogTitle>
-            <DialogDescription>
-              You have already inputted scores for some rounds. Adjusting the lineup will reset all rounds back to Set 1 and clear all scores. This action cannot be undone.
-            </DialogDescription>
+        <DialogContent className="px-0 py-3">
+          <DialogHeader className="px-4 pb-2 bg-neutral-50 text-left sm:text-left border-b">
+            <DialogTitle className="font-semibold text-base">
+              Adjust lineup
+            </DialogTitle>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowResetConfirmation(false)}>
+          <div className="px-4 flex flex-col gap-2">
+              <Alert className="bg-amber-50 border-amber-200">
+                <WarningIcon size={24} weight="fill" className="text-amber-400!" />
+                <AlertTitle className="text-amber-600 text-sm font-semibold">The rounds has been scored</AlertTitle>
+                <AlertDescription className="text-clx-text-default text-sm">
+                Adjusting the lineup will reset all scores.
+                </AlertDescription>
+              </Alert>
+              <div className="text-sm">
+                <p>Are you sure want to adjust lineup? This action cannot be undone.</p>
+              </div>
+          </div>
+          <DialogFooter className="px-4 mt-1 gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setShowResetConfirmation(false)} className="text-clx-text-secondary">
               Cancel
             </Button>
-            <Button onClick={handleConfirmReset}>
-              Reset and Continue
+            <Button onClick={handleConfirmReset} size={"lg"} className="bg-clx-bg-accent font-semibold">
+              Continue
             </Button>
           </DialogFooter>
         </DialogContent>
