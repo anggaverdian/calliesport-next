@@ -440,10 +440,10 @@ export default function LeaderboardTable({ tournament }: LeaderboardTableProps) 
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
-                              <CheckCircleIcon weight="fill" size={16} className="text-clx-icon-success" /> <span>You won at that round.</span>
+                              <CheckCircleIcon weight="fill" size={16} className="text-clx-icon-success" /> <span>{selectedPlayer} won round.</span>
                           </div>
                           <div className="flex items-center gap-2">
-                              <XCircleIcon weight="fill" size={16} className="text-clx-icon-danger" /> <span>You lost at that round.</span>
+                              <XCircleIcon weight="fill" size={16} className="text-clx-icon-danger" /> <span>{selectedPlayer} lost round.</span>
                           </div>
                           <div className="flex items-center gap-2">
                               <CircleIcon weight="fill" size={16} className="text-clx-icon-disabled" /> <span>{selectedPlayer}&apos;s scheduled round</span>
