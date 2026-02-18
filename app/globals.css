@@ -152,6 +152,7 @@
     --color-clx-bg-overlay: rgb(39 38 37 / 0.75);
     --color-clx-bg-dark: var(--color-neutral-dark);
     --color-clx-bg-dark-subtle: var(--color-neutral-gray-800);
+    --color-clx-cream: #E4DACD;
 
      /* Background Colors - Primary */
     --color-clx-bg-primary: var(--color-orange-500);

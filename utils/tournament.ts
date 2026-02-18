@@ -47,9 +47,9 @@ export interface Round {
 
 // Team type display names
 export const teamTypeNames: Record<TeamType, string> = {
-  standard: "Standard Americano",
+  standard: "Classic Americano",
   mix: "Mix Americano",
-  team: "Team Americano",
+  team: "Fix Partner",
   mexicano: "Standard Mexicano",
 };
 

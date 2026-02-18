@@ -270,12 +270,12 @@ export default function AppBarTournamentDetail({
             />
           </div>
           <div className="flex-1 min-w-0">
+            <p className="text-sm text-clx-text-secondary">
+            {teamTypeNames[tournament.teamType]} {/*tournament.players.length} Players, {pointLabel*/}
+            </p>
             <h2 className="text-xl font-bold text-clx-text-default truncate">
               {tournament.name}
             </h2>
-            <p className="text-xs text-clx-text-secondary">
-            {teamTypeLabel}, {tournament.players.length} Players, {pointLabel}
-            </p>
           </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -285,7 +285,7 @@ export default function AppBarTournamentDetail({
                     className="shrink-0 data-[state=open]:bg-clx-bg-neutral-hover"
                     aria-label="Tournament settings"
                   >
-                    <DotsThreeOutlineVerticalIcon size={20} weight="fill" className="text-clx-icon-default" />
+                    <DotsThreeOutlineVerticalIcon size={20} weight="fill" className="w-auto! h-auto! text-clx-icon-dark" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 pb-3" align="end">

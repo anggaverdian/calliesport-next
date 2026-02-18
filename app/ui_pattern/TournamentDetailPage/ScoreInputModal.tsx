@@ -62,10 +62,10 @@ export default function ScoreInputModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[320px] rounded-md p-0 gap-0">
-        <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="text-base font-semibold">
-            Score {teamPlayers.join(" & ")}
+      <DialogContent className="max-w-[360px] rounded-md p-0 gap-0 overflow-auto">
+        <DialogHeader className="px-4 py-3 bg-neutral-50 text-left sm:text-left border-b">
+          <DialogTitle className="text-base font-semibold text-left">
+            Score for {teamPlayers.join(" & ")}
           </DialogTitle>
           <DialogDescription className="sr-only">
             Select a score for {teamPlayers.join(" and ")}
@@ -82,7 +82,7 @@ export default function ScoreInputModal({
                   key={score}
                   type="button"
                   onClick={() => handleScoreSelect(score)}
-                  className={`h-10 rounded-md text-sm font-medium transition-colors ${
+                  className={`h-11 rounded-md text-base font-medium transition-colors ${
                     isSelected
                       ? "bg-clx-bg-accent text-white"
                       : "bg-clx-bg-neutral-bold text-clx-text-default hover:bg-clx-bg-neutral-hover"

@@ -106,7 +106,7 @@ export default function Home() {
       ) : (
         // Tournament list
         <>
-          <div className="flex-1 p-4 space-y-3">
+          <div className="flex-1 p-4 space-y-2.5">
             {activeTab === "tournaments" ? (
               // Active tournaments
               [...activeTournaments]
