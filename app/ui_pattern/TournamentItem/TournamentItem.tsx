@@ -60,7 +60,7 @@ export default function TournamentItem({ tournament, onView, onDelete }: Tournam
           <p className="text-xs text-clx-text-secondary leading-[18px]">
             {teamTypeNames[tournament.teamType]}
           </p>
-          <p className="text-lg font-bold text-clx-text-default leading-6 truncate tracking-wide">
+          <p className="text-base font-bold text-clx-text-default leading-6 truncate tracking-wide">
             {tournament.name}
           </p>
         </div>
