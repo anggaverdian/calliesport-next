@@ -270,7 +270,7 @@ export default function AppBarTournamentDetail({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-clx-text-secondary">
+            <p className="text-xs text-clx-text-secondary">
             {teamTypeNames[tournament.teamType]} {/*tournament.players.length} Players, {pointLabel*/}
             </p>
             <h2 className="text-xl font-bold text-clx-text-default truncate">

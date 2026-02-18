@@ -8,7 +8,6 @@ import AppBarDetail from "../ui_pattern/AppBar/AppBarDetail";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Drawer,
   DrawerClose,
@@ -24,7 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { PlusIcon, XIcon, DotsThreeIcon, PencilSimpleIcon, GenderMaleIcon, GenderFemaleIcon } from "@phosphor-icons/react";
+import { PlusIcon, XIcon, DotsThreeIcon, PencilSimpleIcon, GenderMaleIcon, GenderFemaleIcon, UsersIcon } from "@phosphor-icons/react";
 import {
   Popover,
   PopoverContent,
@@ -45,6 +44,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import thunderIcon from "../../public/thunder.svg";
 import chartIcon from "../../public/charts.svg";
 import upIcon from "../../public/Up.svg";
+import usersIllustration from "../../public/Create/Add Player/Users.svg";
 import { saveTournament, TeamType, Gender } from "@/utils/tournament";
 import { saveMixAmericanoTournament, MIX_AMERICANO_ALLOWED_PLAYERS, MIX_AMERICANO_6_MEN, MIX_AMERICANO_6_WOMEN, MIX_AMERICANO_8_MEN, MIX_AMERICANO_8_WOMEN } from "@/utils/MixAmericanoTournament";
 
@@ -100,15 +100,31 @@ export default function CreateTournament() {
 
   // Store scroll position to restore when drawer closes (iOS PWA fix)
   const scrollPositionRef = useRef(0);
+  const isDrawerClosingRef = useRef(false);
+  const playerInputRef = useRef<HTMLInputElement>(null);
+
+  // Blur input when user touches anything outside the input (dismisses keyboard)
+  const handleDrawerContentTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (playerInputRef.current && !playerInputRef.current.contains(target)) {
+      playerInputRef.current.blur();
+    }
+  }, []);
 
   const handleDrawerOpenChange = useCallback((open: boolean) => {
     if (open) {
       // Store current scroll position before opening drawer
       scrollPositionRef.current = window.scrollY;
     } else {
+      isDrawerClosingRef.current = true;
+      // Immediately blur focused input to dismiss keyboard before drawer animation
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       // Restore scroll position after drawer closes
       requestAnimationFrame(() => {
         window.scrollTo(0, scrollPositionRef.current);
+        isDrawerClosingRef.current = false;
       });
     }
     setIsDrawerOpen(open);
@@ -228,79 +244,47 @@ export default function CreateTournament() {
     router.push("/");
   };
 
-  const handleAddPlayers = () => {
-    if (!playerInput.trim()) return;
+  const handleAddPlayer = () => {
+    const name = playerInput.trim();
+    if (!name) return;
 
-    // Split by comma or newline, trim whitespace, filter empty strings
-    const newPlayerNames = playerInput
-      .split(/[,\n]/)
-      .map((name) => name.trim())
-      .filter((name) => name.length > 0);
-
-    if (newPlayerNames.length > 0) {
-      // Check for duplicates within the new input
-      const lowerCaseNewPlayers = newPlayerNames.map(name => name.toLowerCase());
-      const uniqueNewPlayers = new Set(lowerCaseNewPlayers);
-      if (uniqueNewPlayers.size !== newPlayerNames.length) {
-        setPlayerInputError("Duplicate names found in input. Each player must have a unique name.");
+    if (isMixAmericano) {
+      // Mix Americano: Check max limit (max is 8 players)
+      const maxAllowed = Math.max(...MIX_AMERICANO_ALLOWED_PLAYERS);
+      if (mixPlayers.length >= maxAllowed) {
+        setPlayerInputError(`Mix Americano allows only 6 or 8 players (currently ${mixPlayers.length}).`);
         return;
       }
 
-      if (isMixAmericano) {
-        // Mix Americano: Check max limit (max is 8 players)
-        const maxAllowed = Math.max(...MIX_AMERICANO_ALLOWED_PLAYERS);
-        const totalPlayers = mixPlayers.length + newPlayerNames.length;
-        if (totalPlayers > maxAllowed) {
-          setPlayerInputError(`Mix Americano allows only 6 or 8 players (currently ${mixPlayers.length}).`);
-          return;
-        }
-
-        // Check for duplicates with existing players
-        const existingLowerCase = mixPlayers.map(p => p.name.toLowerCase());
-        const duplicates = newPlayerNames.filter(name => existingLowerCase.includes(name.toLowerCase()));
-        if (duplicates.length > 0) {
-          setPlayerInputError(`Player "${duplicates[0]}" already exists. Each player must have a unique name.`);
-          return;
-        }
-
-        // Add new players with default gender as male
-        const newMixPlayers: MixPlayer[] = newPlayerNames.map(name => ({
-          name,
-          gender: "male" as Gender,
-        }));
-
-        setMixPlayers([...mixPlayers, ...newMixPlayers]);
-        // Also update the form players array for form validation
-        setValue("players", [...mixPlayers.map(p => p.name), ...newPlayerNames], { shouldValidate: true });
-      } else {
-        // Standard Americano
-        // Check for duplicates with existing players
-        const existingLowerCase = players.map(name => name.toLowerCase());
-        const duplicates = newPlayerNames.filter(name => existingLowerCase.includes(name.toLowerCase()));
-        if (duplicates.length > 0) {
-          setPlayerInputError(`Player "${duplicates[0]}" already exists. Each player must have a unique name.`);
-          return;
-        }
-
-        // Clear error if validation passes
-        setPlayerInputError("");
-
-        const totalPlayers = players.length + newPlayerNames.length;
-
-        // Check if adding these players would exceed max limit
-        if (totalPlayers > 8) {
-          setPlayerInputError(`Americano allows only max. 8 players.`);
-          //setPlayerInputError(`Current: ${players.length} / 8.`);
-          return;
-        }
-
-        setValue("players", [...players, ...newPlayerNames], { shouldValidate: true });
+      // Check for duplicates with existing players
+      const isDuplicate = mixPlayers.some(p => p.name.toLowerCase() === name.toLowerCase());
+      if (isDuplicate) {
+        setPlayerInputError(`Player "${name}" already exists.`);
+        return;
       }
 
-      setPlayerInputError("");
-      setPlayerInput("");
-      toast.success(`Added ${newPlayerNames.length} player(s)!`);
+      const newMixPlayer: MixPlayer = { name, gender: "male" as Gender };
+      const updatedMixPlayers = [...mixPlayers, newMixPlayer];
+      setMixPlayers(updatedMixPlayers);
+      setValue("players", updatedMixPlayers.map(p => p.name), { shouldValidate: true });
+    } else {
+      // Standard Americano
+      if (players.length >= 8) {
+        setPlayerInputError("Americano allows only max. 8 players.");
+        return;
+      }
+
+      const isDuplicate = players.some(p => p.toLowerCase() === name.toLowerCase());
+      if (isDuplicate) {
+        setPlayerInputError(`Player "${name}" already exists.`);
+        return;
+      }
+
+      setValue("players", [...players, name], { shouldValidate: true });
     }
+
+    setPlayerInputError("");
+    setPlayerInput("");
   };
 
   const handleDeletePlayer = (index: number) => {
@@ -567,7 +551,7 @@ export default function CreateTournament() {
                       </DrawerTrigger>
                       <DrawerContent className="rounded-none! max-h-[90vh]" showHandle={true}>
                         <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-0">
-                          <div className="flex items-center justify-between invisible">
+                          <div className="flex items-center justify-between hidden">
                             <div className="flex items-center gap-3">
                               <DrawerClose asChild>
                                 <button type="button" className="text-clx-icon-default">
@@ -586,50 +570,57 @@ export default function CreateTournament() {
                           </div>
                         </DrawerHeader>
 
-                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[70vh] max-h-[70vh]">
+                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[70vh] max-h-[70vh]" onTouchStart={handleDrawerContentTouchStart}>
                           {/* Input section */}
-                          <div className="space-y-3">
-                            <div className="space-y-1">
-                              <Label className="text-base font-semibold text-clx-text-default">
-                                Input player name
-                              </Label>
-                              <Textarea
-                                placeholder="e.g callie, mayo, eckel, jojo"
-                                className={`h-20 text-base resize-none ${playerInputError ? "border-clx-border-danger" : "border-clx-border-textfield"}`}
-                                value={playerInput}
-                                onChange={(e) => {
-                                  setPlayerInput(e.target.value);
-                                  if (playerInputError) setPlayerInputError("");
-                                }}
-                              />
-                              {playerInputError && (
-                                <p className="text-sm text-clx-text-danger">{playerInputError}</p>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between gap-4">
-                              <p className="text-sm text-clx-text-default">
-                                Bulk add player names separated by commas or new lines.
+                          <div className="space-y-1">
+                            <Label className="text-base font-semibold text-clx-text-default">
+                              Add player name
+                            </Label>
+                            <Input
+                              ref={playerInputRef}
+                              type="text"
+                              enterKeyHint="enter"
+                              autoComplete="off"
+                              autoCorrect="off"
+                              autoCapitalize="words"
+                              placeholder="Player name"
+                              className={`h-11 text-base ${playerInputError ? "border-clx-border-danger" : "border-clx-border-textfield"}`}
+                              value={playerInput}
+                              onChange={(e) => {
+                                setPlayerInput(e.target.value);
+                                if (playerInputError) setPlayerInputError("");
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddPlayer();
+                                }
+                              }}
+                              onBlur={() => {
+                                // iOS keyboard ✓ (Done) button blurs the input — trigger add on blur
+                                // Skip if drawer is closing (blur was triggered by drawer dismiss, not Done button)
+                                if (!isDrawerClosingRef.current && playerInput.trim()) {
+                                  handleAddPlayer();
+                                }
+                              }}
+                            />
+                            {playerInputError ? (
+                              <p className="text-sm text-clx-text-danger">{playerInputError}</p>
+                            ) : (
+                              <p className="text-xs text-clx-text-secondary tracking-[0.2px]">
+                                Type name and enter on your keyboard to add.
                               </p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="h-10 px-4 pl-2! border-clx-border-textfield rounded-lg gap-2 shrink-0 disabled:opacity-50 disabled:bg-clx-bg-disabled"
-                                onClick={handleAddPlayers}
-                                disabled={!playerInput.trim()}
-                              >
-                                <PlusIcon size={24} className="text-clx-text-default" />
-                                <span className="font-bold text-clx-text-default">Add</span>
-                              </Button>
-                            </div>
+                            )}
                           </div>
 
                           {/* Players list section */}
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <p className="text-base font-semibold text-clx-text-default">Players list</p>
-                              <p className="text-sm text-clx-text-secondary">
-                                Total: <span className="text-clx-text-default">{isMixAmericano ? mixPlayers.length : players.length} players</span>
-                              </p>
+                            <div className="flex items-center justify-between h-8">
+                              <p className="text-base font-semibold text-clx-text-default">Players</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-clx-text-default">{isMixAmericano ? mixPlayers.length : players.length}</p>
+                                <UsersIcon size={20} className="text-clx-text-default" />
+                              </div>
                             </div>
 
                             {/* Mix Americano: Show gender counts */}
@@ -649,8 +640,12 @@ export default function CreateTournament() {
                             )}
 
                             {(isMixAmericano ? mixPlayers.length : players.length) === 0 ? (
-                              <div className="py-20 text-center">
-                                <p className="text-sm text-clx-text-placeholder">No players added yet</p>
+                              <div className="flex flex-col items-center gap-4 py-6 rounded-lg">
+                                <Image src={usersIllustration} width={80} height={80} alt="No players" />
+                                <div className="text-center">
+                                  <p className="text-base font-semibold text-clx-text-default">No players added yet</p>
+                                  <p className="text-sm text-clx-text-secondary">Add player by input their name on textfield.</p>
+                                </div>
                               </div>
                             ) : isMixAmericano ? (
                               // Mix Americano player list with gender toggle

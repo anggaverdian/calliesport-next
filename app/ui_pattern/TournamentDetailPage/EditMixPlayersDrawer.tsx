@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -24,14 +24,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  PlusIcon,
   DotsThreeIcon,
   XIcon,
   GenderMale as GenderMaleIcon,
   GenderFemale as GenderFemaleIcon,
+  UsersIcon,
 } from "@phosphor-icons/react";
+import Image from "next/image";
+import usersIllustration from "../../../public/Create/Add Player/Users.svg";
 import {
   MixTournament,
   MixPlayer,
@@ -84,6 +85,17 @@ export default function EditMixPlayersDrawer({
   // Track if add/remove actions were used (vs just renaming or gender change)
   const [hasStructuralChange, setHasStructuralChange] = useState(false);
 
+  const isDrawerClosingRef = useRef(false);
+  const playerInputRef = useRef<HTMLInputElement>(null);
+
+  // Blur input when user touches anything outside the input (dismisses keyboard)
+  const handleDrawerContentTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (playerInputRef.current && !playerInputRef.current.contains(target)) {
+      playerInputRef.current.blur();
+    }
+  }, []);
+
   // Reset form when drawer opens
   useEffect(() => {
     if (isOpen) {
@@ -130,46 +142,24 @@ export default function EditMixPlayersDrawer({
     return { added: [], removed: [], renames, hasPlayerCountChanged: false };
   };
 
-  const handleAddPlayers = () => {
-    if (!playerInput.trim()) return;
+  const handleAddPlayer = () => {
+    const name = playerInput.trim();
+    if (!name) return;
 
-    // Split by comma or newline, trim whitespace, filter empty strings
-    const newPlayerNames = playerInput
-      .split(/[,\n]/)
-      .map((name) => name.trim())
-      .filter((name) => name.length > 0);
-
-    if (newPlayerNames.length === 0) return;
-
-    // Check for duplicates within the new input
-    const lowerCaseNewPlayers = newPlayerNames.map((name) => name.toLowerCase());
-    const uniqueNewPlayers = new Set(lowerCaseNewPlayers);
-    if (uniqueNewPlayers.size !== newPlayerNames.length) {
-      setPlayerInputError(
-        "Duplicate names found in input. Each player must have a unique name."
-      );
+    const maxAllowed = Math.max(...MIX_AMERICANO_ALLOWED_PLAYERS);
+    if (mixPlayers.length >= maxAllowed) {
+      setPlayerInputError(`Mix Americano allows only 6 or 8 players (currently ${mixPlayers.length}).`);
       return;
     }
 
-    // Check for duplicates with existing players
-    const existingLowerCase = mixPlayers.map((p) => p.name.toLowerCase());
-    const duplicates = newPlayerNames.filter((name) =>
-      existingLowerCase.includes(name.toLowerCase())
-    );
-    if (duplicates.length > 0) {
-      setPlayerInputError(
-        `Player "${duplicates[0]}" already exists. Each player must have a unique name.`
-      );
+    const isDuplicate = mixPlayers.some(p => p.name.toLowerCase() === name.toLowerCase());
+    if (isDuplicate) {
+      setPlayerInputError(`Player "${name}" already exists.`);
       return;
     }
 
-    // Clear error and add to local state with default gender "male"
     setPlayerInputError("");
-    const newMixPlayers: MixPlayer[] = newPlayerNames.map((name) => ({
-      name,
-      gender: "male" as Gender,
-    }));
-    setMixPlayers([...mixPlayers, ...newMixPlayers]);
+    setMixPlayers([...mixPlayers, { name, gender: "male" as Gender }]);
     setPlayerInput("");
     setHasStructuralChange(true);
   };
@@ -380,7 +370,18 @@ export default function EditMixPlayersDrawer({
 
   return (
     <>
-      <Drawer open={isOpen} onOpenChange={onClose}>
+      <Drawer open={isOpen} onOpenChange={(open) => {
+          if (!open) {
+            isDrawerClosingRef.current = true;
+            if (document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
+            requestAnimationFrame(() => {
+              isDrawerClosingRef.current = false;
+            });
+          }
+          onClose();
+        }}>
         <DrawerContent className="pb-2 max-h-[90vh] rounded-none!">
           <DrawerHeader className="border-b border-neutral-100 px-4 pb-3 pt-0 shrink-0 h-auto">
             <div className="flex items-center justify-between">
@@ -402,59 +403,55 @@ export default function EditMixPlayersDrawer({
             </div>
           </DrawerHeader>
 
-          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[80vh] max-h-[80vh]">
+          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[80vh] max-h-[80vh]" onTouchStart={handleDrawerContentTouchStart}>
             {/* Input section */}
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <Label className="text-base font-semibold text-clx-text-default">
-                  Input player name
-                </Label>
-                <Textarea
-                  placeholder="e.g callie, mayo, eckel, jojo"
-                  className={`h-20 text-base resize-none ${
-                    playerInputError
-                      ? "border-clx-border-danger"
-                      : "border-clx-border-textfield"
-                  }`}
-                  value={playerInput}
-                  onChange={(e) => {
-                    setPlayerInput(e.target.value);
-                    if (playerInputError) setPlayerInputError("");
-                  }}
-                />
-                {playerInputError && (
-                  <p className="text-sm text-clx-text-danger">{playerInputError}</p>
-                )}
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-clx-text-default">
-                  Bulk add player names separated by commas or new lines.
+            <div className="space-y-1">
+              <Label className="text-base font-semibold text-clx-text-default">
+                Add player name
+              </Label>
+              <Input
+                ref={playerInputRef}
+                type="text"
+                enterKeyHint="enter"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="words"
+                placeholder="Player name"
+                className={`h-11 text-base ${playerInputError ? "border-clx-border-danger" : "border-clx-border-textfield"}`}
+                value={playerInput}
+                onChange={(e) => {
+                  setPlayerInput(e.target.value);
+                  if (playerInputError) setPlayerInputError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddPlayer();
+                  }
+                }}
+                onBlur={() => {
+                  if (!isDrawerClosingRef.current && playerInput.trim()) {
+                    handleAddPlayer();
+                  }
+                }}
+              />
+              {playerInputError ? (
+                <p className="text-sm text-clx-text-danger">{playerInputError}</p>
+              ) : (
+                <p className="text-xs text-clx-text-secondary tracking-[0.2px]">
+                  Type name and enter on your keyboard to add.
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 px-4 pl-2! border-clx-border-textfield rounded-lg gap-2 shrink-0 disabled:opacity-50 disabled:bg-clx-bg-disabled"
-                  onClick={handleAddPlayers}
-                  disabled={!playerInput.trim()}
-                >
-                  <PlusIcon size={24} className="text-clx-text-default" />
-                  <span className="font-bold text-clx-text-default">Add</span>
-                </Button>
-              </div>
+              )}
             </div>
 
             {/* Players list section */}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-base font-semibold text-clx-text-default">
-                  Players list
-                </p>
-                <p className="text-sm text-clx-text-secondary">
-                  Total:{" "}
-                  <span className="text-clx-text-default">
-                    {mixPlayers.length} players
-                  </span>
-                </p>
+              <div className="flex items-center justify-between h-8">
+                <p className="text-base font-semibold text-clx-text-default">Players</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-clx-text-default">{mixPlayers.length}</p>
+                  <UsersIcon size={20} className="text-clx-text-default" />
+                </div>
               </div>
 
               {/* Gender counts */}
@@ -474,10 +471,12 @@ export default function EditMixPlayersDrawer({
               )}
 
               {mixPlayers.length === 0 ? (
-                <div className="py-20 text-center">
-                  <p className="text-sm text-clx-text-placeholder">
-                    No players added yet
-                  </p>
+                <div className="flex flex-col items-center gap-4 py-6 rounded-lg">
+                  <Image src={usersIllustration} width={80} height={80} alt="No players" />
+                  <div className="text-center">
+                    <p className="text-base font-semibold text-clx-text-default">No players added yet</p>
+                    <p className="text-sm text-clx-text-secondary">Add player by input their name on textfield.</p>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">

@@ -19,6 +19,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover', // This is the critical part for transparency
+  interactiveWidget: 'resizes-visual', // Prevent content shifting when keyboard opens (PWA iOS/Android)
   themeColor: '#000000',
 }
 
