@@ -279,7 +279,7 @@ export default function EditPlayersDrawer({
             </div>
           </DrawerHeader>
 
-          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[50vh] max-h-[70vh]" onTouchStart={handleDrawerContentTouchStart}>
+          <div className="flex flex-col gap-8 py-4 pb-20 overflow-y-auto flex-1 px-4 min-h-[75vh] max-h-[75vh]" onTouchStart={handleDrawerContentTouchStart}>
             {/* Input section */}
             <div className="space-y-1">
               <Label className="text-base font-semibold text-clx-text-default">

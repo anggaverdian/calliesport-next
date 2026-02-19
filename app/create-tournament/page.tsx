@@ -396,7 +396,7 @@ export default function CreateTournament() {
             <div className="flex-1 p-4 space-y-7">
               {/* Tournament name input */}
               <Field>
-                <div className="grid w-full items-center gap-1">
+                <div className="grid w-full items-center gap-0.5">
                   <Label htmlFor="tournament-name" className="text-base font-semibold text-clx-text-default">
                     Name
                   </Label>
@@ -408,7 +408,7 @@ export default function CreateTournament() {
                         {...field}
                         type="text"
                         id="tournament-name"
-                        placeholder="e.g Padelhaus tournament"
+                        placeholder="Enter tournament name"
                         maxLength={64}
                         className={`h-11 text-base placeholder:text-clx-text-placeholder ${errors.tournamentName ? "border-clx-border-danger-bold" : "border-clx-border-textfield"}`}
                       />
@@ -570,7 +570,7 @@ export default function CreateTournament() {
                           </div>
                         </DrawerHeader>
 
-                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[70vh] max-h-[70vh]" onTouchStart={handleDrawerContentTouchStart}>
+                        <div className="flex-1 p-4 space-y-6 overflow-y-auto pb-24 min-h-[75vh] max-h-[75vh]" onTouchStart={handleDrawerContentTouchStart}>
                           {/* Input section */}
                           <div className="space-y-1">
                             <Label className="text-base font-semibold text-clx-text-default">

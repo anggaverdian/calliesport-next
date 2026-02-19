@@ -449,12 +449,6 @@
     min-height: -webkit-fill-available;
   }
 
-  /* Prevent body scroll when drawer/modal is open */
-  body[data-scroll-locked] {
-    position: fixed;
-    width: 100%;
-    overflow: hidden;
-  }
 }
 
 /* Fix drawer content when keyboard is open on iOS */
