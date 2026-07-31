@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Tournament, calculateRounds, getPointTypeLabel } from "@/utils/tournament";
+import { Tournament, calculateRounds, getCourtCount, getPointTypeLabel } from "@/utils/tournament";
 
 interface HistoryTournamentItemProps {
   tournament: Tournament;
@@ -29,7 +29,7 @@ export default function HistoryTournamentItem({
   onView,
   onDelete,
 }: HistoryTournamentItemProps) {
-  const rounds = calculateRounds(tournament.players.length);
+  const rounds = calculateRounds(tournament.players.length, getCourtCount(tournament));
 
   return (
     <div

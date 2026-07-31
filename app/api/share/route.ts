@@ -26,6 +26,7 @@ const TournamentSchema = z.object({
   pointType: z.string(),
   players: z.array(z.string()),
   playerGenders: z.record(z.string(), z.enum(["male", "female"])).optional(),
+  courtCount: z.union([z.literal(1), z.literal(2)]).optional(),
   rounds: z.array(RoundSchema),
   createdAt: z.string(),
   hasExtended: z.boolean().optional(),

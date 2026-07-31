@@ -7,7 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Tournament, teamTypeNames, calculateRounds, TeamType, getPointTypeLabel } from "@/utils/tournament";
+import { Tournament, teamTypeNames, calculateRounds, getCourtCount, TeamType, getPointTypeLabel } from "@/utils/tournament";
 
 // SVG imports for team type icons
 import thunderIcon from "../../../public/thunder.svg";
@@ -30,7 +30,7 @@ interface TournamentItemProps {
 };
 
 export default function TournamentItem({ tournament, onView, onDelete }: TournamentItemProps) {
-  const rounds = calculateRounds(tournament.players.length);
+  const rounds = calculateRounds(tournament.players.length, getCourtCount(tournament));
   const icon = teamTypeIcons[tournament.teamType];
   const pointType = tournament.pointType;
 

@@ -6,11 +6,12 @@ import { DotsThreeOutlineIcon } from "@phosphor-icons/react";
 
 interface ScoreCardProps {
   match: Match;
+  courtLabel?: string;
   onScoreClickA: () => void;
   onScoreClickB: () => void;
 }
 
-export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: ScoreCardProps) {
+export default function ScoreCard({ match, courtLabel = "Court 1", onScoreClickA, onScoreClickB }: ScoreCardProps) {
   // Determine winner/loser/tie when match is completed
   const isCompleted = match.isCompleted;
   const isTie = isCompleted && match.scoreA !== null && match.scoreB !== null && match.scoreA === match.scoreB;
@@ -68,7 +69,7 @@ export default function ScoreCard({ match, onScoreClickA, onScoreClickB }: Score
     <div className="flex flex-col gap-3">
       {/* Score display */}
       <div className="flex items-center justify-center gap-1.5 space-x-16">
-        <span className="text-sm text-clx-text-secondary">Court 1</span>
+        <span className="text-sm text-clx-text-secondary">{courtLabel}</span>
         <div className="flex items-center space-x-1">
           <button
             type="button"

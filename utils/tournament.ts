@@ -15,6 +15,9 @@ export function isTeamTypeSupported(teamType: TeamType): boolean {
 
 export type Gender = "male" | "female";
 
+// Number of courts played in parallel each round
+export type CourtCount = 1 | 2;
+
 export interface Tournament {
   id: string;
   name: string;
@@ -22,6 +25,7 @@ export interface Tournament {
   pointType: string;
   players: string[];
   playerGenders?: Record<string, Gender>; // For Mix Americano: maps player name to gender
+  courtCount?: CourtCount; // Undefined = 1 court (legacy tournaments)
   rounds: Round[];
   createdAt: string;
   hasExtended?: boolean;
@@ -56,6 +60,37 @@ export const teamTypeNames: Record<TeamType, string> = {
 // Player limits (1 court = max 8 players)
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 8;
+
+// Player counts allowed when playing on 2 courts
+export const TWO_COURT_ALLOWED_PLAYERS = [10, 12];
+
+// Player counts that already have a pairing matrix implemented for 2 courts.
+// 12 players is allowed by the form but its matrix is not built yet.
+export const TWO_COURT_SUPPORTED_PLAYERS = [10];
+
+// Normalize a tournament's court count (legacy tournaments have none stored)
+export function getCourtCount(tournament: Pick<Tournament, "courtCount">): CourtCount {
+  return tournament.courtCount === 2 ? 2 : 1;
+}
+
+// Player limits for a given court count
+export function getPlayerLimits(courtCount: CourtCount): { min: number; max: number } {
+  if (courtCount === 2) {
+    return {
+      min: Math.min(...TWO_COURT_ALLOWED_PLAYERS),
+      max: Math.max(...TWO_COURT_ALLOWED_PLAYERS),
+    };
+  }
+  return { min: MIN_PLAYERS, max: MAX_PLAYERS };
+}
+
+// Check if a player count can start a tournament with the given court count
+export function isPlayerCountSupported(playerCount: number, courtCount: CourtCount): boolean {
+  if (courtCount === 2) {
+    return TWO_COURT_SUPPORTED_PLAYERS.includes(playerCount);
+  }
+  return playerCount >= MIN_PLAYERS && playerCount <= MAX_PLAYERS;
+}
 
 // ============================================================================
 // SHARED UTILITY FUNCTIONS
@@ -106,8 +141,15 @@ export function getPointTypeLabel(pointType: string): string {
 // These functions are specific to Standard Americano team type
 // ============================================================================
 
-// Calculate total rounds based on player count (Standard Americano - 1 Court)
-export function calculateRounds(playerCount: number): number {
+// Calculate total rounds based on player count and court count (Standard Americano)
+export function calculateRounds(playerCount: number, courtCount: CourtCount = 1): number {
+  if (courtCount === 2) {
+    const twoCourtRoundsMap: Record<number, number> = {
+      10: 12, // 12 rounds x 2 courts = every pair partners at least once
+    };
+    return twoCourtRoundsMap[playerCount] || 0;
+  }
+
   const roundsMap: Record<number, number> = {
     4: 6,
     5: 10,
@@ -118,8 +160,15 @@ export function calculateRounds(playerCount: number): number {
   return roundsMap[playerCount] || 0;
 }
 
-// Calculate extended rounds based on player count (for "Add More Rounds" feature - 1 Court)
-export function calculateExtendedRounds(playerCount: number): number {
+// Calculate extended rounds based on player count (for "Add More Rounds" feature)
+export function calculateExtendedRounds(playerCount: number, courtCount: CourtCount = 1): number {
+  if (courtCount === 2) {
+    const twoCourtExtendedRoundsMap: Record<number, number> = {
+      10: 12, // Total: 24
+    };
+    return twoCourtExtendedRoundsMap[playerCount] || 0;
+  }
+
   const extendedRoundsMap: Record<number, number> = {
     4: 6,   // Total: 12
     5: 10,  // Total: 20
@@ -308,6 +357,40 @@ const WHIST_MATRIX_8_PLAYERS: [number, number, number, number][] = [
   [3, 7, 1, 5], // Round 12:
   [0, 5, 4, 1], // Round 13:
   [2, 7, 3, 6], // Round 14:
+];
+
+// ============================================================================
+// PERFECT WHIST TOURNAMENT MATRIX FOR 10 PLAYERS - 2 COURTS
+// Two matches run in parallel each round, 2 players rest.
+// This ensures balanced pairing across 12 rounds:
+// - Every one of the 45 possible pairs partners at least once
+//   (12 rounds is the minimum possible: 12 rounds x 4 teams = 48 >= 45)
+// - 3 pairs partner twice (the unavoidable 48 - 45 remainder):
+//   indices 0+1, 3+5 and 6+7
+// - Opponent counts range 1-3 times
+// - Rest rotation repeats every 5 rounds, so 6 players play 10 matches
+//   and 4 players play 9 (the leaderboard compensates for this)
+// ============================================================================
+
+// Perfect Whist Tournament Matrix for 10 players on 2 courts (12 rounds)
+// Format: [court1: teamA[0], teamA[1], teamB[0], teamB[1],
+//          court2: teamA[0], teamA[1], teamB[0], teamB[1]] using indices 0-9
+// Resting players for each round are the two not listed in the row
+type TwoCourtRow = [number, number, number, number, number, number, number, number];
+
+const WHIST_MATRIX_10_PLAYERS_2_COURTS: TwoCourtRow[] = [
+  [0, 1, 2, 3, 4, 5, 6, 7], // Round 1  (Rest: 8, 9)
+  [0, 3, 8, 5, 1, 6, 7, 9], // Round 2  (Rest: 2, 4)
+  [0, 6, 3, 7, 2, 8, 4, 9], // Round 3  (Rest: 1, 5)
+  [2, 7, 8, 3, 1, 4, 5, 9], // Round 4  (Rest: 0, 6)
+  [0, 4, 2, 9, 8, 6, 1, 5], // Round 5  (Rest: 3, 7)
+  [0, 7, 2, 5, 1, 3, 4, 6], // Round 6  (Rest: 8, 9)
+  [0, 5, 1, 7, 8, 9, 6, 3], // Round 7  (Rest: 2, 4)
+  [0, 2, 6, 9, 8, 7, 4, 3], // Round 8  (Rest: 1, 5)
+  [2, 1, 8, 4, 5, 7, 3, 9], // Round 9  (Rest: 0, 6)
+  [0, 8, 1, 9, 2, 4, 5, 6], // Round 10 (Rest: 3, 7)
+  [0, 1, 4, 7, 2, 6, 5, 3], // Round 11 (Rest: 8, 9)
+  [0, 9, 5, 3, 8, 1, 6, 7], // Round 12 (Rest: 2, 4)
 ];
 
 // Generate matches for 4 players using Perfect Whist Tournament Matrix
@@ -639,6 +722,128 @@ function generateWhistMatches6PlayersWithFirstMatch(
   return generateWhistMatches6Players(reorderedPlayers, numRounds, 0);
 }
 
+// ============================================================================
+// 2 COURTS - ROUND GENERATION
+// Unlike the 1 court generators (which return a flat list of matches, one per
+// round), these return complete Round objects because each round holds the two
+// matches played in parallel.
+// ============================================================================
+
+// Build the two parallel matches of a single 2 court round
+function buildTwoCourtMatches(players: string[], row: TwoCourtRow): Match[] {
+  const [a1, a2, b1, b2, c1, c2, d1, d2] = row;
+
+  return [
+    {
+      id: generateId(),
+      teamA: [players[a1], players[a2]],
+      teamB: [players[b1], players[b2]],
+      scoreA: null,
+      scoreB: null,
+      isCompleted: false,
+    },
+    {
+      id: generateId(),
+      teamA: [players[c1], players[c2]],
+      teamB: [players[d1], players[d2]],
+      scoreA: null,
+      scoreB: null,
+      isCompleted: false,
+    },
+  ];
+}
+
+// Generate rounds for 10 players on 2 courts using Perfect Whist Tournament Matrix
+function generateWhistRounds10Players2Courts(
+  players: string[],
+  numRounds: number,
+  startRoundIndex: number = 0
+): Round[] {
+  if (players.length !== 10) {
+    throw new Error("The 2 court Whist matrix is only for 10 players");
+  }
+
+  const rounds: Round[] = [];
+
+  for (let i = 0; i < numRounds; i++) {
+    const roundIndex = startRoundIndex + i;
+    const matrixIndex = roundIndex % WHIST_MATRIX_10_PLAYERS_2_COURTS.length;
+    const row = WHIST_MATRIX_10_PLAYERS_2_COURTS[matrixIndex];
+
+    const matches = buildTwoCourtMatches(players, row);
+    const playingPlayers = new Set(row.map(index => players[index]));
+
+    rounds.push({
+      roundNumber: i + 1, // Callers renumber when appending to existing rounds
+      matches,
+      restingPlayers: players.filter(p => !playingPlayers.has(p)),
+    });
+  }
+
+  return rounds;
+}
+
+// Generate 2 court rounds for any supported player count
+function generateTwoCourtRounds(
+  players: string[],
+  numRounds: number,
+  startRoundIndex: number = 0
+): Round[] {
+  if (players.length === 10) {
+    return generateWhistRounds10Players2Courts(players, numRounds, startRoundIndex);
+  }
+
+  // 12 players is not implemented yet
+  return [];
+}
+
+// Validation function to verify 2 court matrix balance (logs to console)
+function validateTwoCourtBalance(rounds: Round[], players: string[]): void {
+  const playCount: Record<string, number> = {};
+  const partnerCount: Record<string, number> = {};
+  const versusCount: Record<string, number> = {};
+
+  players.forEach(p => { playCount[p] = 0; });
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      const key = [players[i], players[j]].sort().join("+");
+      partnerCount[key] = 0;
+      versusCount[key] = 0;
+    }
+  }
+
+  rounds.forEach(round => {
+    round.matches.forEach(({ teamA, teamB }) => {
+      [...teamA, ...teamB].forEach(p => { playCount[p]++; });
+
+      partnerCount[[teamA[0], teamA[1]].sort().join("+")]++;
+      partnerCount[[teamB[0], teamB[1]].sort().join("+")]++;
+
+      for (const a of teamA) {
+        for (const b of teamB) {
+          versusCount[[a, b].sort().join("+")]++;
+        }
+      }
+    });
+  });
+
+  const partnerValues = Object.values(partnerCount);
+  const versusValues = Object.values(versusCount);
+  const neverPartnered = Object.entries(partnerCount).filter(([, c]) => c === 0);
+
+  console.log(`=== 2 Court Matrix Validation (${players.length} Players, ${rounds.length} Rounds) ===`);
+  console.log("Matches played per player:");
+  for (const [player, count] of Object.entries(playCount)) {
+    console.log(`  ${player}: ${count} played, ${rounds.length - count} rested`);
+  }
+  console.log(
+    `Partner counts: min=${Math.min(...partnerValues)} max=${Math.max(...partnerValues)}` +
+    ` ${neverPartnered.length === 0 ? "✓ every pair partners at least once" : `✗ ${neverPartnered.length} pairs never partner`}`
+  );
+  console.log(`Versus counts: min=${Math.min(...versusValues)} max=${Math.max(...versusValues)}`);
+  console.log("============================================");
+}
+
 // Validation function to verify Whist matrix balance
 function validateWhistMatrixBalance(matches: Match[], players: string[]): void {
   const versusCount: Record<string, number> = {};
@@ -707,8 +912,11 @@ function validateWhistMatrixBalance(matches: Match[], players: string[]): void {
 }
 
 // Generate tournament rounds with balanced pairing using Whist Matrices
-export function generateTournamentRounds(players: string[]): Round[] {
-  const totalRounds = calculateRounds(players.length);
+export function generateTournamentRounds(
+  players: string[],
+  courtCount: CourtCount = 1
+): Round[] {
+  const totalRounds = calculateRounds(players.length, courtCount);
 
   if (totalRounds === 0 || players.length < 4) {
     return [];
@@ -716,6 +924,14 @@ export function generateTournamentRounds(players: string[]): Round[] {
 
   // Shuffle players for randomized initial order
   const shuffledPlayers = shuffleArray(players);
+
+  // 2 courts: the matrix already describes both parallel matches per round
+  if (courtCount === 2) {
+    const rounds = generateTwoCourtRounds(shuffledPlayers, totalRounds, 0);
+    // Validate the balance (will log to console)
+    validateTwoCourtBalance(rounds, shuffledPlayers);
+    return rounds;
+  }
 
   let selectedMatches: Match[];
 
@@ -768,12 +984,26 @@ export function generateTournamentRounds(players: string[]): Round[] {
 export function generateTournamentRoundsWithFirstMatch(
   players: string[],
   teamA: [string, string],
-  teamB: [string, string]
+  teamB: [string, string],
+  courtCount: CourtCount = 1
 ): Round[] {
-  const totalRounds = calculateRounds(players.length);
+  const totalRounds = calculateRounds(players.length, courtCount);
 
   if (totalRounds === 0 || players.length < 4) {
     return [];
+  }
+
+  // 2 courts: the selected lineup becomes Court 1 of round 1, which the matrix
+  // maps to indices 0-3. Remaining players are shuffled into the other slots.
+  if (courtCount === 2) {
+    const selected = [...teamA, ...teamB];
+    const shuffledRest = shuffleArray(players.filter(p => !selected.includes(p)));
+    const orderedPlayers = [...selected, ...shuffledRest];
+
+    const rounds = generateTwoCourtRounds(orderedPlayers, totalRounds, 0);
+    // Validate the balance (will log to console)
+    validateTwoCourtBalance(rounds, orderedPlayers);
+    return rounds;
   }
 
   // Reorder players array so that:
@@ -878,7 +1108,8 @@ export function regenerateTournamentWithFirstMatch(
   const newRounds = generateTournamentRoundsWithFirstMatch(
     tournament.players,
     teamA,
-    teamB
+    teamB,
+    getCourtCount(tournament)
   );
 
   // Reset tournament state
@@ -953,16 +1184,19 @@ export function saveTournament(tournament: Omit<Tournament, "id" | "createdAt" |
   const sanitizedName = sanitizeString(tournament.name);
   const sanitizedPlayers = sanitizeStringArray(tournament.players);
 
+  const courtCount = getCourtCount(tournament);
+
   // Only generate rounds for Standard Americano (currently supported)
   // Other team types will have empty rounds until their logic is implemented
   const rounds = isTeamTypeSupported(tournament.teamType)
-    ? generateTournamentRounds(sanitizedPlayers)
+    ? generateTournamentRounds(sanitizedPlayers, courtCount)
     : [];
 
   const newTournament: Tournament = {
     ...tournament,
     name: sanitizedName,
     players: sanitizedPlayers,
+    courtCount,
     id: generateId(),
     rounds,
     createdAt: new Date().toISOString(),
@@ -1072,7 +1306,8 @@ export function extendTournament(tournamentId: string): Tournament | null {
   if (tournament.hasExtended) return null;
 
   const playerCount = tournament.players.length;
-  const additionalRoundsCount = calculateExtendedRounds(playerCount);
+  const courtCount = getCourtCount(tournament);
+  const additionalRoundsCount = calculateExtendedRounds(playerCount, courtCount);
 
   if (additionalRoundsCount === 0) return null;
 
@@ -1080,7 +1315,8 @@ export function extendTournament(tournamentId: string): Tournament | null {
   const additionalRounds = generateAdditionalRounds(
     tournament.players,
     tournament.rounds,
-    additionalRoundsCount
+    additionalRoundsCount,
+    courtCount
   );
 
   // Update round numbers to continue from where we left off
@@ -1101,7 +1337,8 @@ export function extendTournament(tournamentId: string): Tournament | null {
 function generateAdditionalRounds(
   players: string[],
   existingRounds: Round[],
-  additionalRoundsCount: number
+  additionalRoundsCount: number,
+  courtCount: CourtCount = 1
 ): Round[] {
   // Shuffle players for the new set of rounds
   // Each set is self-contained via the Whist matrix, so reshuffling
@@ -1109,6 +1346,12 @@ function generateAdditionalRounds(
   const orderedPlayers = shuffleArray(players);
 
   const startingRoundIndex = existingRounds.length;
+
+  // 2 courts: the matrix produces complete rounds directly
+  if (courtCount === 2) {
+    return generateTwoCourtRounds(orderedPlayers, additionalRoundsCount, startingRoundIndex);
+  }
+
   let selectedMatches: Match[];
 
   // Use Perfect Whist Tournament Matrix for supported player counts (perfectly balanced)
@@ -1248,6 +1491,9 @@ export function addPlayersToTournament(
   // Only allow for Standard Americano (not Mix Americano which has fixed player count)
   if (tournament.teamType !== "standard") return null;
 
+  // 2 court tournaments have a fixed roster (10 or 12) - no add/remove
+  if (getCourtCount(tournament) === 2) return null;
+
   // Sanitize new player names
   const sanitizedNewPlayers = sanitizeStringArray(newPlayers);
 
@@ -1288,6 +1534,9 @@ export function removePlayerFromTournament(
 
   // Only allow for Standard Americano (not Mix Americano which has fixed player count)
   if (tournament.teamType !== "standard") return null;
+
+  // 2 court tournaments have a fixed roster (10 or 12) - no add/remove
+  if (getCourtCount(tournament) === 2) return null;
 
   // Check player limits
   if (tournament.players.length <= MIN_PLAYERS) return null;

@@ -42,6 +42,7 @@ interface TournamentData {
   players: string[];
   teamType: string;
   pointType: string;
+  courtCount?: 1 | 2;
   rounds: Round[];
   createdAt: string;
   hasExtended?: boolean;
@@ -417,12 +418,13 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
 
           <div className="space-y-3">
             {tournament.rounds.map((round) => (
-              <div key={round.roundNumber}>
-                {round.matches.map((match) => (
+              <div key={round.roundNumber} className="space-y-3">
+                {round.matches.map((match, index) => (
                   <RoundCard
                     key={match.id}
                     roundNumber={round.roundNumber}
                     match={match}
+                    courtLabel={round.matches.length > 1 ? `Court ${index + 1}` : undefined}
                   />
                 ))}
               </div>
@@ -657,6 +659,7 @@ export default function SharePageClient({ shareId }: SharePageClientProps) {
 interface RoundCardProps {
   roundNumber: number;
   match: Match;
+  courtLabel?: string; // Only set when a round has more than one court
 }
 
 function calculatePairingStats(
@@ -869,7 +872,7 @@ function StatusSlots({ results }: { results: RoundResult[] }) {
   );
 }
 
-function RoundCard({ roundNumber, match }: RoundCardProps) {
+function RoundCard({ roundNumber, match, courtLabel }: RoundCardProps) {
   const scoreA = match.scoreA ?? 0;
   const scoreB = match.scoreB ?? 0;
   const isCompleted = match.isCompleted;
@@ -891,6 +894,9 @@ function RoundCard({ roundNumber, match }: RoundCardProps) {
     <div className="bg-white border rounded-lg px-6 py-3 space-y-3">
       <p className="text-sm font-bold text-clx-text-default text-center">
         Round {roundNumber}
+        {courtLabel && (
+          <span className="font-normal text-clx-text-secondary"> · {courtLabel}</span>
+        )}
       </p>
 
       <div className="flex items-center justify-between">

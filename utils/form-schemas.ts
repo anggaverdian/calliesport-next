@@ -15,10 +15,11 @@ export const createTournamentSchema = z.object({
     .max(64, "Tournament name must be 3 to 64 characters"),
   teamType: z.string(),
   pointType: z.string(),
-  players: z
-    .array(z.string())
-    .min(4, "Add at least 4 players")
-    .max(8, "Maximum 8 players allowed"),
+  // 1 court = 4-8 players, 2 courts = 10 or 12 players.
+  // The exact player count rule depends on court count and team type, so it is
+  // validated on submit in the create form (see validatePlayers there).
+  courtCount: z.union([z.literal(1), z.literal(2)]),
+  players: z.array(z.string()),
   // Mix Americano specific: player genders
   mixPlayers: z
     .array(MixPlayerSchema)
@@ -54,6 +55,7 @@ export const TournamentSchema = z.object({
   pointType: z.string(),
   players: z.array(z.string()),
   playerGenders: z.record(z.string(), z.enum(["male", "female"])).optional(), // For Mix Americano
+  courtCount: z.union([z.literal(1), z.literal(2)]).optional(), // Undefined = 1 court (legacy)
   rounds: z.array(RoundSchema),
   createdAt: z.string(),
   hasExtended: z.boolean().optional(),

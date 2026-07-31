@@ -25,6 +25,7 @@ import {
   extendTournament,
   endTournament,
   calculateRounds,
+  getCourtCount,
   isTeamTypeSupported,
   teamTypeNames,
   getPointTypeLabel,
@@ -301,7 +302,7 @@ export default function TournamentDetailPage() {
   // For Mix Americano, use the appropriate rounds based on player count (6 or 8)
   const initialRoundsCount = isMixAmericano
     ? calculateMixAmericanoRounds(tournament.players.length)
-    : calculateRounds(tournament.players.length);
+    : calculateRounds(tournament.players.length, getCourtCount(tournament));
 
   // Check if ALL initial rounds (set 1) are completed
   const set1Rounds = tournament.rounds.slice(0, initialRoundsCount);
@@ -509,28 +510,26 @@ export default function TournamentDetailPage() {
             </button>
           </div>
 
-          {/* Match content */}
+          {/* Match content - one score card per court */}
           {currentRoundData && currentRoundData.matches.length > 0 && (
-            <div className="flex flex-col gap-3 px-2 py-10">
+            <div className="flex flex-col gap-8 px-2 py-10">
               <RoundContent
-                match={currentRoundData.matches[0]}
+                matches={currentRoundData.matches}
                 restingPlayers={(() => {
                   // For Mix Americano, calculate resting players from match data
                   // since restingPlayers array is always empty
                   let resting = currentRoundData.restingPlayers;
                   if (isMixAmericano && resting.length === 0) {
-                    const playingPlayers = new Set([
-                      ...currentRoundData.matches[0].teamA,
-                      ...currentRoundData.matches[0].teamB,
-                    ]);
+                    const playingPlayers = new Set(
+                      currentRoundData.matches.flatMap((m) => [...m.teamA, ...m.teamB])
+                    );
                     resting = tournament.players.filter(
                       (player) => !playingPlayers.has(player)
                     );
                   }
                   return resting;
                 })()}
-                onScoreClickA={() => handleScoreClick(0, "A")}
-                onScoreClickB={() => handleScoreClick(0, "B")}
+                onScoreClick={handleScoreClick}
               />
             </div>
           )}
@@ -651,6 +650,12 @@ function DetailsTab({
           <div className="flex justify-between py-3 text-sm">
             <span className="text-clx-text-secondary">Gameplay</span>
             <span className="text-clx-text-default">{teamTypeNames[tournament.teamType]}</span>
+          </div>
+          <div className="flex justify-between py-3 text-sm">
+            <span className="text-clx-text-secondary">Court</span>
+            <span className="text-clx-text-default">
+              {getCourtCount(tournament) === 2 ? "2 courts" : "1 court"}
+            </span>
           </div>
           <div className="flex justify-between py-3 text-sm">
             <span className="text-clx-text-secondary">Point match</span>

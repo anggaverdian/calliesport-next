@@ -33,6 +33,7 @@ import {
   removePlayerFromTournament,
   MIN_PLAYERS,
   MAX_PLAYERS,
+  getCourtCount,
 } from "@/utils/tournament";
 import { toast } from "sonner";
 
@@ -64,6 +65,9 @@ export default function EditPlayersDrawer({
 
   // Track if add/remove actions were used (vs just renaming)
   const [hasStructuralChange, setHasStructuralChange] = useState(false);
+
+  // 2 court tournaments have a fixed roster (10 or 12) - renaming only
+  const isFixedRoster = getCourtCount(tournament) === 2;
 
   const isDrawerClosingRef = useRef(false);
   const playerInputRef = useRef<HTMLInputElement>(null);
@@ -117,6 +121,13 @@ export default function EditPlayersDrawer({
     const name = playerInput.trim();
     if (!name) return;
 
+    if (isFixedRoster) {
+      setPlayerInputError(
+        `A 2 court tournament is fixed at ${tournament.players.length} players. You can only rename players.`
+      );
+      return;
+    }
+
     if (players.length >= MAX_PLAYERS) {
       setPlayerInputError(`Maximum ${MAX_PLAYERS} players allowed.`);
       return;
@@ -136,6 +147,13 @@ export default function EditPlayersDrawer({
 
   const handleRemovePlayer = (index: number) => {
     setOpenPopoverIndex(null);
+
+    if (isFixedRoster) {
+      toast.error(
+        `A 2 court tournament is fixed at ${tournament.players.length} players. You can only rename players.`
+      );
+      return;
+    }
 
     // Check min player limit
     if (players.length <= MIN_PLAYERS) {

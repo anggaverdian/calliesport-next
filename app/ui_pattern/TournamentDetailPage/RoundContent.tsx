@@ -4,26 +4,28 @@ import ScoreCard from "./ScoreCard";
 import { Match } from "@/utils/tournament";
 
 interface RoundContentProps {
-  match: Match;
+  matches: Match[];
   restingPlayers: string[];
-  onScoreClickA: () => void;
-  onScoreClickB: () => void;
+  onScoreClick: (matchIndex: number, team: "A" | "B") => void;
 }
 
 export default function RoundContent({
-  match,
+  matches,
   restingPlayers,
-  onScoreClickA,
-  onScoreClickB,
+  onScoreClick,
 }: RoundContentProps) {
   return (
     <>
-      {/* Score card */}
-      <ScoreCard
-        match={match}
-        onScoreClickA={onScoreClickA}
-        onScoreClickB={onScoreClickB}
-      />
+      {/* One score card per court */}
+      {matches.map((match, index) => (
+        <ScoreCard
+          key={match.id}
+          match={match}
+          courtLabel={`Court ${index + 1}`}
+          onScoreClickA={() => onScoreClick(index, "A")}
+          onScoreClickB={() => onScoreClick(index, "B")}
+        />
+      ))}
 
       {/* Resting players */}
       {restingPlayers.length > 0 && (

@@ -54,6 +54,7 @@ interface ScheduleEntry {
 }
 
 // Schedule for 8 players (4 men, 4 women) - 24 rounds
+// M1 W4 19 21, M3 W2 20 21
 const SCHEDULE_DATA_8_PLAYERS: ScheduleEntry[] = [
     { round: 1,  home: { m: "M1", w: "W1" }, away: { m: "M2", w: "W2" } },
     { round: 2,  home: { m: "M3", w: "W3" }, away: { m: "M4", w: "W4" } },

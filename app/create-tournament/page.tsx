@@ -45,7 +45,17 @@ import thunderIcon from "../../public/thunder.svg";
 import chartIcon from "../../public/charts.svg";
 import upIcon from "../../public/Up.svg";
 import usersIllustration from "../../public/Create/Add Player/Users.svg";
-import { saveTournament, TeamType, Gender } from "@/utils/tournament";
+import {
+  saveTournament,
+  TeamType,
+  Gender,
+  CourtCount,
+  MIN_PLAYERS,
+  MAX_PLAYERS,
+  TWO_COURT_ALLOWED_PLAYERS,
+  getPlayerLimits,
+  isPlayerCountSupported,
+} from "@/utils/tournament";
 import { saveMixAmericanoTournament, MIX_AMERICANO_ALLOWED_PLAYERS, MIX_AMERICANO_6_MEN, MIX_AMERICANO_6_WOMEN, MIX_AMERICANO_8_MEN, MIX_AMERICANO_8_WOMEN } from "@/utils/MixAmericanoTournament";
 
 // Team type options with descriptions matching Figma design
@@ -78,6 +88,12 @@ const pointOptions = [
   { id: "best5", label: "Best of 5" },
 ];
 
+// Court options - 2 courts run two matches in parallel each round
+const courtOptions: { id: CourtCount; label: string }[] = [
+  { id: 1, label: "1 court" },
+  { id: 2, label: "2 courts" },
+];
+
 // Mix Americano player type
 interface MixPlayer {
   name: string;
@@ -96,7 +112,8 @@ export default function CreateTournament() {
 
   // Mix Americano specific state - players with gender
   const [mixPlayers, setMixPlayers] = useState<MixPlayer[]>([]);
-  const [mixPlayerValidationError, setMixPlayerValidationError] = useState("");
+  // Player count validation error - only shown after clicking Create
+  const [playerValidationError, setPlayerValidationError] = useState("");
 
   // Store scroll position to restore when drawer closes (iOS PWA fix)
   const scrollPositionRef = useRef(0);
@@ -142,13 +159,21 @@ export default function CreateTournament() {
       tournamentName: "",
       teamType: "standard",
       pointType: "21",
+      courtCount: 1,
       players: [],
     },
   });
 
   const players = watch("players");
   const teamType = watch("teamType");
+  const courtCount = watch("courtCount");
   const isMixAmericano = teamType === "mix";
+
+  // Court selection only applies to Standard Americano
+  // (Mix Americano is fixed at 6 or 8 players on a single court)
+  const showCourtSelection = teamType === "standard";
+  const effectiveCourtCount: CourtCount = showCourtSelection ? courtCount : 1;
+  const playerLimits = getPlayerLimits(effectiveCourtCount);
 
   // Calculate gender counts for Mix Americano
   const menCount = mixPlayers.filter(p => p.gender === "male").length;
@@ -156,16 +181,6 @@ export default function CreateTournament() {
 
   // Validate Mix Americano requirements (called on form submit)
   const validateMixAmericano = (): { valid: boolean; error?: string } => {
-    if (!isMixAmericano) return { valid: true };
-
-    // No players added
-    if (mixPlayers.length === 0) {
-      return {
-        valid: false,
-        error: "Please add players",
-      };
-    }
-
     const playerCount = mixPlayers.length;
 
     // Check if player count is valid (6 or 8)
@@ -191,18 +206,62 @@ export default function CreateTournament() {
     return { valid: true };
   };
 
-  const onSubmit = (data: CreateTournamentFormData) => {
+  // Validate the player count against team type and court count (called on form submit)
+  const validatePlayers = (): { valid: boolean; error?: string } => {
+    const playerCount = isMixAmericano ? mixPlayers.length : players.length;
+
+    // No players added
+    if (playerCount === 0) {
+      return { valid: false, error: "Please add players" };
+    }
+
     if (isMixAmericano) {
-      // Validate Mix Americano requirements
-      const validation = validateMixAmericano();
-      if (!validation.valid) {
-        setMixPlayerValidationError(validation.error || "Invalid configuration");
-        return;
+      return validateMixAmericano();
+    }
+
+    // 2 courts: exactly 10 or 12 players
+    if (effectiveCourtCount === 2) {
+      if (!TWO_COURT_ALLOWED_PLAYERS.includes(playerCount)) {
+        return {
+          valid: false,
+          error: `2 courts requires exactly 10 or 12 players (currently ${playerCount})`,
+        };
       }
+      if (!isPlayerCountSupported(playerCount, 2)) {
+        return {
+          valid: false,
+          error: `${playerCount} players on 2 courts is coming soon. Please use 10 players for now.`,
+        };
+      }
+      return { valid: true };
+    }
 
-      // Clear any previous error
-      setMixPlayerValidationError("");
+    // 1 court: 4 to 8 players
+    if (playerCount < MIN_PLAYERS) {
+      return { valid: false, error: `Add at least ${MIN_PLAYERS} players` };
+    }
+    if (playerCount > MAX_PLAYERS) {
+      return {
+        valid: false,
+        error: `1 court allows maximum ${MAX_PLAYERS} players (currently ${playerCount})`,
+      };
+    }
 
+    return { valid: true };
+  };
+
+  const onSubmit = (data: CreateTournamentFormData) => {
+    // Validate player count for the selected team type and court count
+    const validation = validatePlayers();
+    if (!validation.valid) {
+      setPlayerValidationError(validation.error || "Invalid configuration");
+      return;
+    }
+
+    // Clear any previous error
+    setPlayerValidationError("");
+
+    if (isMixAmericano) {
       // Save Mix Americano tournament
       const result = saveMixAmericanoTournament({
         name: data.tournamentName,
@@ -222,6 +281,7 @@ export default function CreateTournament() {
         name: data.tournamentName,
         teamType: data.teamType as TeamType,
         pointType: data.pointType,
+        courtCount: effectiveCourtCount,
         players: data.players,
       });
       toast.success(`Tournament "${data.tournamentName}" created with ${data.players.length} players!`);
@@ -229,15 +289,10 @@ export default function CreateTournament() {
     }
   };
 
-  // Handle form validation errors - show Mix Americano specific error when players validation fails
+  // Handle form validation errors (e.g. tournament name) - surface player errors too
   const onFormError = () => {
-    if (isMixAmericano) {
-      // Run Mix Americano validation to show appropriate error
-      const validation = validateMixAmericano();
-      if (!validation.valid) {
-        setMixPlayerValidationError(validation.error || "Invalid configuration");
-      }
-    }
+    const validation = validatePlayers();
+    setPlayerValidationError(validation.valid ? "" : validation.error || "Invalid configuration");
   };
 
   const handleCancel = () => {
@@ -268,9 +323,13 @@ export default function CreateTournament() {
       setMixPlayers(updatedMixPlayers);
       setValue("players", updatedMixPlayers.map(p => p.name), { shouldValidate: true });
     } else {
-      // Standard Americano
-      if (players.length >= 8) {
-        setPlayerInputError("Americano allows only max. 8 players.");
+      // Standard Americano - limit depends on the selected court count
+      if (players.length >= playerLimits.max) {
+        setPlayerInputError(
+          effectiveCourtCount === 2
+            ? `2 courts allows only max. ${playerLimits.max} players.`
+            : `Americano allows only max. ${playerLimits.max} players.`
+        );
         return;
       }
 
@@ -373,12 +432,24 @@ export default function CreateTournament() {
   // Reset players when switching team types
   const handleTeamTypeChange = (newTeamType: string) => {
     setValue("teamType", newTeamType);
+    // Only Standard Americano supports 2 courts
+    if (newTeamType !== "standard") {
+      setValue("courtCount", 1);
+    }
     // Clear players when switching between standard and mix
     if ((newTeamType === "mix" && teamType !== "mix") || (newTeamType !== "mix" && teamType === "mix")) {
       setValue("players", []);
       setMixPlayers([]);
       setPlayerInputError("");
+      setPlayerValidationError("");
     }
+  };
+
+  // Switching court count changes the required roster size, so clear stale errors
+  const handleCourtCountChange = (newCourtCount: CourtCount) => {
+    setValue("courtCount", newCourtCount);
+    setPlayerInputError("");
+    setPlayerValidationError("");
   };
 
   // Get men and women players for display
@@ -483,6 +554,53 @@ export default function CreateTournament() {
                   />
                 </div>
               </Field>
+
+              {/* Court selection - Standard Americano only */}
+              {showCourtSelection && (
+                <Field>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-base font-semibold text-clx-text-default">Court</p>
+                      <p className="text-xs text-clx-text-dark-subtle">
+                        How many courts do you play in parallel?
+                      </p>
+                    </div>
+                    <Controller
+                      name="courtCount"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {courtOptions.map((court) => {
+                            const isSelected = field.value === court.id;
+                            return (
+                              <Badge
+                                key={court.id}
+                                variant="outline"
+                                onClick={() => {
+                                  field.onChange(court.id);
+                                  handleCourtCountChange(court.id);
+                                }}
+                                className={`shrink-0 whitespace-nowrap px-3 py-1.5 h-auto text-sm cursor-pointer ${
+                                  isSelected
+                                    ? "bg-clx-bg-neutral-bold text-clx-text-default font-semibold border-neutral-200"
+                                    : "bg-white text-clx-text-secondary font-normal border-neutral-200 hover:bg-clx-bg-neutral-hover"
+                                }`}
+                              >
+                                {court.label}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                    />
+                    <p className="text-xs text-clx-text-secondary">
+                      {effectiveCourtCount === 2
+                        ? "2 courts run two matches every round. Requires 10 or 12 players."
+                        : `1 court runs one match every round. Requires ${MIN_PLAYERS} to ${MAX_PLAYERS} players.`}
+                    </p>
+                  </div>
+                </Field>
+              )}
 
               {/* Point match selection */}
               <Field>
@@ -778,17 +896,10 @@ export default function CreateTournament() {
                     </Drawer>
                   </div>
 
-                  {/* Validation errors */}
-                  {errors.players && !isMixAmericano && (
+                  {/* Player count validation error - only shown after clicking Create */}
+                  {playerValidationError && (
                     <div className="w-auto text-center">
-                      <p className="text-sm text-clx-text-danger">{errors.players.message}</p>
-                    </div>
-                  )}
-
-                  {/* Mix Americano validation error - only shown after clicking Create */}
-                  {mixPlayerValidationError && isMixAmericano && (
-                    <div className="w-auto text-center">
-                      <p className="text-sm text-clx-text-danger">{mixPlayerValidationError}</p>
+                      <p className="text-sm text-clx-text-danger">{playerValidationError}</p>
                     </div>
                   )}
 

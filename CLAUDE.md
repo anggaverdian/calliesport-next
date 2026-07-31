@@ -45,6 +45,11 @@ The core tournament logic lives in [utils/tournament.ts](utils/tournament.ts). K
   - `WHIST_MATRIX_6_PLAYERS`: 15 rounds - each pair partners 2×, opposes 4×
   - `WHIST_MATRIX_7_PLAYERS`: 21 rounds - balanced rotation with rest
   - `WHIST_MATRIX_8_PLAYERS`: 14 rounds - each pair partners 1×, opposes 2×
+- **2 courts** uses a wider matrix where each row describes both parallel matches
+  (8 indices: `[c1A1, c1A2, c1B1, c1B2, c2A1, c2A2, c2B1, c2B2]`):
+  - `WHIST_MATRIX_10_PLAYERS_2_COURTS`: 12 rounds - all 45 pairs partner at least
+    once (12 is the minimum possible), 3 pairs partner 2×, 2 players rest per round
+  - 12 players on 2 courts is **not implemented yet** (`TWO_COURT_SUPPORTED_PLAYERS`)
 - **No dynamic algorithm**: All pairings are predetermined via matrices for perfect mathematical balance
 
 #### 2. **Round Generation**
@@ -103,7 +108,7 @@ const onSubmit = (data: FormData) => {
 ## Key Business Rules
 
 ### Tournament Types
-- **Standard Americano**: Fully implemented for 4-8 players (`isTeamTypeSupported()` returns `true`)
+- **Standard Americano**: Fully implemented for 4-8 players on 1 court, and 10 players on 2 courts (`isTeamTypeSupported()` returns `true`)
 - **Mix Americano**: Fully implemented for 6 or 8 players (`isTeamTypeSupported()` returns `true`)
   - 6 players: 3 men + 3 women, 9 rounds (extendable to 18)
   - 8 players: 4 men + 4 women, 24 rounds
@@ -112,8 +117,15 @@ const onSubmit = (data: FormData) => {
 - Team Americano, Standard Mexicano show "Coming Soon" placeholder
 
 ### Player Limits
-- **Standard Americano**: 4-8 players (`MIN_PLAYERS=4`, `MAX_PLAYERS=8`)
+- **Standard Americano, 1 court**: 4-8 players (`MIN_PLAYERS=4`, `MAX_PLAYERS=8`)
+- **Standard Americano, 2 courts**: 10 or 12 players (`TWO_COURT_ALLOWED_PLAYERS`); only 10 has a matrix so far (`TWO_COURT_SUPPORTED_PLAYERS`)
 - **Mix Americano**: 6 or 8 players only (must have equal men and women)
+
+### Courts
+- `Tournament.courtCount` is `1 | 2`, and **undefined means 1 court** (legacy tournaments) — always read it through `getCourtCount(tournament)`, never directly
+- 2 courts means each `Round` holds **two** `Match` objects played in parallel; 1 court rounds hold one
+- Court selection is offered on the create page for Standard Americano only, and cannot be changed after creation
+- A 2-court roster is fixed: players can be renamed but not added or removed
 
 ### Tournament Lifecycle
 1. **Create**: Generate rounds based on player count (formula in `calculateRounds()`)
@@ -155,6 +167,7 @@ const onSubmit = (data: FormData) => {
 
 ### Testing Pairing Balance
 - `validateWhistMatrixBalance()` logs partner/opponent counts to console for all player counts (4-8)
+- `validateTwoCourtBalance()` logs per-player match counts plus partner/opponent ranges for 2-court schedules
 - Used during development to verify Whist matrix correctness for Standard Americano
 - Mix Americano uses separate schedule validation (check man/woman pairing constraints)
 
@@ -167,7 +180,8 @@ const onSubmit = (data: FormData) => {
 4. Update UI in [app/tournament/[id]/page.tsx](app/tournament/[id]/page.tsx) or related component
 
 ### Modifying Pairing Algorithm
-- **Standard Americano (4-8 players)**: Edit `WHIST_MATRIX_*_PLAYERS` arrays in [utils/tournament.ts](utils/tournament.ts)
+- **Standard Americano (4-8 players, 1 court)**: Edit `WHIST_MATRIX_*_PLAYERS` arrays in [utils/tournament.ts](utils/tournament.ts)
+- **Standard Americano (2 courts)**: Edit `WHIST_MATRIX_10_PLAYERS_2_COURTS` in [utils/tournament.ts](utils/tournament.ts). To add 12 players: add the matrix, dispatch it in `generateTwoCourtRounds()`, add the round counts to `calculateRounds()`/`calculateExtendedRounds()`, and add `12` to `TWO_COURT_SUPPORTED_PLAYERS`
 - **Mix Americano (6/8 players)**: Edit `SCHEDULE_DATA_6_PLAYERS` or `SCHEDULE_DATA_8_PLAYERS` in [utils/MixAmericanoTournament.ts](utils/MixAmericanoTournament.ts)
 - Always test with `validateWhistMatrixBalance()` or manual pairing count verification
 - All matrices are hardcoded for perfect mathematical balance - changes require careful validation
