@@ -49,6 +49,12 @@ export interface Round {
   restingPlayers: string[];
 }
 
+// A user-chosen lineup for one court in round 1 (used by "Adjust lineup")
+export interface CourtLineup {
+  teamA: [string, string];
+  teamB: [string, string];
+}
+
 // Team type display names
 export const teamTypeNames: Record<TeamType, string> = {
   standard: "Classic Americano",
@@ -797,6 +803,42 @@ function generateTwoCourtRounds(
   return [];
 }
 
+// Order players so the given round 1 lineups land on the matrix slots they need.
+// Round 1 of the matrix is [0,1 vs 2,3 | 4,5 vs 6,7], so pinned players simply
+// occupy the leading slots in the order they were chosen, court by court.
+// Returns null when the lineups are not a valid selection of this roster.
+function orderPlayersForLineups(
+  players: string[],
+  lineups: CourtLineup[]
+): string[] | null {
+  const pinned = lineups.flatMap(lineup => [...lineup.teamA, ...lineup.teamB]);
+
+  // Every slot must be filled, with real players and no repeats
+  if (pinned.some(p => !p)) return null;
+  if (new Set(pinned).size !== pinned.length) return null;
+  if (pinned.some(p => !players.includes(p))) return null;
+
+  const shuffledRest = shuffleArray(players.filter(p => !pinned.includes(p)));
+  return [...pinned, ...shuffledRest];
+}
+
+// Generate 2 court rounds where round 1 uses the given lineups
+function generateTwoCourtRoundsWithLineups(
+  players: string[],
+  lineups: CourtLineup[],
+  numRounds: number
+): Round[] {
+  const orderedPlayers = orderPlayersForLineups(players, lineups);
+  if (!orderedPlayers) return [];
+
+  const rounds = generateTwoCourtRounds(orderedPlayers, numRounds, 0);
+  // Validate the balance (will log to console)
+  if (rounds.length > 0) {
+    validateTwoCourtBalance(rounds, orderedPlayers);
+  }
+  return rounds;
+}
+
 // Validation function to verify 2 court matrix balance (logs to console)
 function validateTwoCourtBalance(rounds: Round[], players: string[]): void {
   const playCount: Record<string, number> = {};
@@ -993,17 +1035,9 @@ export function generateTournamentRoundsWithFirstMatch(
     return [];
   }
 
-  // 2 courts: the selected lineup becomes Court 1 of round 1, which the matrix
-  // maps to indices 0-3. Remaining players are shuffled into the other slots.
+  // 2 courts: pin the selected lineup to Court 1 of round 1 and shuffle the rest
   if (courtCount === 2) {
-    const selected = [...teamA, ...teamB];
-    const shuffledRest = shuffleArray(players.filter(p => !selected.includes(p)));
-    const orderedPlayers = [...selected, ...shuffledRest];
-
-    const rounds = generateTwoCourtRounds(orderedPlayers, totalRounds, 0);
-    // Validate the balance (will log to console)
-    validateTwoCourtBalance(rounds, orderedPlayers);
-    return rounds;
+    return generateTwoCourtRoundsWithLineups(players, [{ teamA, teamB }], totalRounds);
   }
 
   // Reorder players array so that:
@@ -1091,11 +1125,39 @@ export function generateTournamentRoundsWithFirstMatch(
   return rounds;
 }
 
-// Regenerate tournament rounds with a specific first match lineup
-export function regenerateTournamentWithFirstMatch(
+// Generate tournament rounds with a specific first round across every court.
+// One lineup per court, in court order. Supplying fewer lineups than courts
+// pins only those courts and shuffles the remaining players.
+export function generateTournamentRoundsWithFirstRound(
+  players: string[],
+  lineups: CourtLineup[],
+  courtCount: CourtCount = 1
+): Round[] {
+  if (lineups.length === 0) return [];
+
+  const totalRounds = calculateRounds(players.length, courtCount);
+
+  if (totalRounds === 0 || players.length < 4) {
+    return [];
+  }
+
+  if (courtCount === 2) {
+    return generateTwoCourtRoundsWithLineups(players, lineups, totalRounds);
+  }
+
+  // 1 court has a single match in round 1
+  return generateTournamentRoundsWithFirstMatch(
+    players,
+    lineups[0].teamA,
+    lineups[0].teamB,
+    1
+  );
+}
+
+// Regenerate tournament rounds with a specific first round (one lineup per court)
+export function regenerateTournamentWithFirstRound(
   tournamentId: string,
-  teamA: [string, string],
-  teamB: [string, string]
+  lineups: CourtLineup[]
 ): Tournament | null {
   const tournament = getTournamentById(tournamentId);
 
@@ -1104,13 +1166,15 @@ export function regenerateTournamentWithFirstMatch(
   // Only allow regeneration for Standard Americano
   if (!isTeamTypeSupported(tournament.teamType)) return null;
 
-  // Generate new rounds with the specified first match
-  const newRounds = generateTournamentRoundsWithFirstMatch(
+  // Generate new rounds with the specified first round
+  const newRounds = generateTournamentRoundsWithFirstRound(
     tournament.players,
-    teamA,
-    teamB,
+    lineups,
     getCourtCount(tournament)
   );
+
+  // Never wipe an existing schedule when generation fails (e.g. invalid lineup)
+  if (newRounds.length === 0) return null;
 
   // Reset tournament state
   tournament.rounds = newRounds;
@@ -1120,6 +1184,7 @@ export function regenerateTournamentWithFirstMatch(
   updateTournament(tournament);
   return tournament;
 }
+
 
 // Get all tournaments from localStorage with safe parsing and validation
 export function getTournaments(): Tournament[] {

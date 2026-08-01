@@ -55,6 +55,7 @@ The core tournament logic lives in [utils/tournament.ts](utils/tournament.ts). K
 #### 2. **Round Generation**
 - `generateTournamentRounds(players)`: Creates all rounds with shuffled player order
 - `generateTournamentRoundsWithFirstMatch(players, teamA, teamB)`: Allows user to specify Round 1 lineup, then generates balanced rounds from there
+- `generateTournamentRoundsWithFirstRound(players, lineups, courtCount)`: The "Adjust lineup" entry point — takes one `CourtLineup` per court so the user can set Round 1 on every court. Supplying fewer lineups than courts pins only those and shuffles the rest. Returns `[]` on an invalid lineup (duplicate, unknown player, empty slot), and `regenerateTournamentWithFirstRound()` refuses to overwrite the schedule in that case
 - `extendTournament(tournamentId)`: Adds Set 2 rounds while preserving pairing history balance
 
 #### 3. **State Tracking**
